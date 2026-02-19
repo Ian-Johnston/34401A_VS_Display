@@ -1,0 +1,224 @@
+/**
+  ******************************************************************************
+  * @file    display.c
+  * @brief   This file provides code for the
+  *          display MAIN, AUX, ANNUNCIATORS & SPLASH.
+  ******************************************************************************
+*/
+
+/* Includes ------------------------------------------------------------------*/
+#include "spi.h"
+#include "main.h"
+#include "timer.h"
+#include "lcd.h"
+#include "lt7680.h"
+#include "display.h"
+#include <string.h>  // For strchr, strncpy
+#include <stdio.h>   // For debugging (optional)
+
+//#define DURATION_MS 5000     // 5 seconds in milliseconds
+#define TIMER_INTERVAL_MS 35 // The interval of your timed sub in milliseconds
+
+// Display colours default
+uint32_t MainColourFore = 0xFFFFFF;			// White FFFFFF
+uint32_t AnnunColourFore = 0x00FF00;		// Green 00FF00
+uint32_t BackgroundColour = 0x000000;		// Black 000000
+uint32_t SplashIanJColourFore = 0xFFFF00;	// Yellow FFFF00
+
+
+//************************************************************************************************************************************************************
+
+void DisplayMain(void)
+{
+
+}
+
+
+// Shift chars right - We have more space on the TFT so can afford to do this
+// Enter the original four chars to be shifted
+void ShiftUnitsRight(char* text1)
+{
+	static const char* unit4[] = {
+		" VDC", "MVDC",
+		"KOHM", " OHM", "MOHM", "GOHM",
+		"MAAC", "UAAC", "UADC", "MADC",
+		" ADC", " AAC", "MVAC", " VAC",
+		"MSEC", " SEC",
+		"  HZ", " MHZ",
+		"  DB"
+	};
+
+	for (int u = 0; u < (int)(sizeof(unit4) / sizeof(unit4[0])); u++) {
+		const char* p = unit4[u];
+
+		if (text1[9] == p[0] &&
+			text1[10] == p[1] &&
+			text1[11] == p[2] &&
+			text1[12] == p[3]) {
+
+			// shift ONLY the 4-char unit suffix right by one
+			text1[13] = text1[12];
+			text1[12] = text1[11];
+			text1[11] = text1[10];
+			text1[10] = text1[9];
+			text1[9] = ' ';
+			return;
+		}
+	}
+}
+
+
+// Replace characters
+// Enter the before & after of the 4 chat text to be replaced
+void FixUnitText(char* text1)
+{
+	static const struct {
+		const char from[5];   // 4 chars + '\0'
+		const char to[5];     // 4 chars + '\0'
+	} rules[] = {
+		{ "MSEC", "  ms" },
+		{ " SEC", "   s" },
+		{ "  HZ", "  Hz" },
+		{ " MHZ", " MHz" },
+		{ "  DB", "  dB" },
+		{ "MVAC", "mVAC" },
+		{ "MVDC", "mVDC" },
+		{ "KOHM", "kohm" },
+		{ " OHM", " ohm" },
+		{ "GOHM", "Gohm" },
+		{ "MOHM", "Mohm" },
+		{ "MAAC", "mAAC" },
+		{ "MADC", "mADC" },
+		{ "UADC", "\xB5""ADC" }   // µADC (0xB5 in ISO-8859-1)
+	};
+
+	for (int i = 0; text1[i + 3] != '\0'; i++) {
+		for (int r = 0; r < (int)(sizeof(rules) / sizeof(rules[0])); r++) {
+			if (text1[i] == rules[r].from[0] &&
+				text1[i + 1] == rules[r].from[1] &&
+				text1[i + 2] == rules[r].from[2] &&
+				text1[i + 3] == rules[r].from[3]) {
+
+				text1[i] = rules[r].to[0];
+				text1[i + 1] = rules[r].to[1];
+				text1[i + 2] = rules[r].to[2];
+				text1[i + 3] = rules[r].to[3];
+				return; // only one unit expected
+			}
+		}
+	}
+}
+
+
+void DisplayAnnunciators() {
+
+
+}
+
+
+void DisplaySplash() {
+
+	// IanJ
+	SetTextColors(SplashIanJColourFore, BackgroundColour); // Foreground, Background
+	ConfigureFontAndPosition(
+		0b00,    // Internal CGROM
+		0b00,    // Font size
+		0b00,    // ISO 8859-1
+		0,       // Full alignment enabled
+		0,       // Chroma keying disabled
+		1,       // Rotate 90 degrees counterclockwise
+		0b00,    // Width multiplier
+		0b01,    // Height multiplier
+		1,       // Line spacing
+		4,       // Character spacing
+		Xpos_SPLASH,     // Cursor X
+		Ypos_SPLASH      // Cursor Y
+	);
+
+	DrawText("Protocol by xi, TFT Upgrade by Ian Johnston") & '\0';
+
+	HAL_Delay(10);
+
+	// Main
+	SetTextColors(MainColourFore, BackgroundColour); // Foreground, Background
+	ConfigureFontAndPosition(
+		0b00,    // Internal CGROM
+		0b10,    // Font size
+		0b00,    // ISO 8859-1
+		0,       // Full alignment enabled
+		0,       // Chroma keying disabled
+		1,       // Rotate 90 degrees counterclockwise
+		0b11,    // Width multiplier
+		0b11,    // Height multiplier
+		1,       // Line spacing
+		4,       // Character spacing
+		Xpos_MAIN,     // Cursor X
+		Ypos_MAIN      // Cursor Y
+	);
+
+	// Always draw exactly 14 characters (13 source + 1 added)
+	char text1[15];   // 14 chars + terminator
+	int i;
+
+	// Copy the 13 source characters (displayWithPunct is always 13 chars)
+	for (i = 0; i < 13; i++) {
+//		char c = displayWithPunct[i];
+//		text1[i] = (c == '\0') ? ' ' : c;
+	}
+
+	// Default: add trailing space as the 14th character
+	text1[13] = ' ';
+	text1[14] = '\0';
+
+	memcpy(text1, "##############", 14);
+	text1[14] = '\0';
+
+	DrawText(text1);
+
+	HAL_Delay(10);
+
+	// Annunciators
+	const char* AnnuncNames[12] = {
+		"SMPL", "REM", "SRQ", "ADRS", "AC+DC", "4Wohm",
+		"AZOFF", "MRNG", "MATH", "REAR", "ERR", "SHIFT"
+	};
+
+	// Set Y-position of the annunciators
+	int AnnuncYCoords[12] = {
+		10,   // SMPL
+		87,   // REM
+		151,  // SRQ
+		212,  // ADRS
+		289,  // AC+DC
+		382,  // 4Wohm
+		477,  // AZOFF
+		571,  // MRNG
+		649,  // MATH
+		726,  // REAR
+		803,  // ERR
+		860   // SHIFT
+	};
+
+	for (int i = 0; i < 12; i++) {
+
+		SetTextColors(AnnunColourFore, BackgroundColour); // ON
+		ConfigureFontAndPosition(
+			0b00,    // Internal CGROM
+			0b00,    // 16-dot font size
+			0b00,    // ISO 8859-1
+			0,       // Full alignment enabled
+			0,       // Chroma keying disabled
+			1,       // Rotate 90 degrees counterclockwise
+			0b01,    // Width X0
+			0b01,    // Height X0
+			5,       // Line spacing
+			0,       // Character spacing
+			Xpos_ANNUNC,
+			AnnuncYCoords[i]
+		);
+
+		DrawText(AnnuncNames[i]);
+		HAL_Delay(10);
+	}
+
+}
