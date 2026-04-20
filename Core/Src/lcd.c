@@ -371,5 +371,3 @@ void BuyDisplay_Init() {
 	HAL_Delay(20);
 
 }
-
-

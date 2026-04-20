@@ -29,7 +29,6 @@
 #include "dma.h"
 #include "spi.h"
 #include "gpio.h"
-#include "decoder_34401a.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -42,8 +41,9 @@
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal_tim.h"
 #include <stddef.h>
+#include "decoder_34401a.h"
 
-    TIM_HandleTypeDef htim3; // Definition of htim3
+TIM_HandleTypeDef htim3; // Definition of htim3
 
 //******************************************************************************
 // Variables
@@ -156,16 +156,9 @@ int main(void) {
 
     ClearScreen();                  // Again.....
 
-    // Right wipe to clear random pixels down the far right hand side
-    DrawLine(0, 959, 239, 959, 0x00, 0x00, 0x00);    // far right hand vertical line, black, 1 pixel line. (this line hidden!)
-    DrawLine(0, 958, 239, 958, 0x00, 0x00, 0x00);    // (this line hidden!)
-    DrawLine(0, 957, 239, 957, 0x00, 0x00, 0x00);
-    DrawLine(0, 956, 239, 956, 0x00, 0x00, 0x00);
-    DrawLine(0, 955, 239, 955, 0x00, 0x00, 0x00);
-    DrawLine(0, 954, 239, 954, 0x00, 0x00, 0x00);
-    DrawLine(0, 953, 239, 953, 0x00, 0x00, 0x00);
-    DrawLine(0, 952, 239, 952, 0x00, 0x00, 0x00);
-    DrawLine(0, 951, 239, 951, 0x00, 0x00, 0x00);
+    RightWipe();
+
+    //TestDraw();
 
     ClearScreen();                  // Again.....
 
@@ -175,21 +168,37 @@ int main(void) {
     //**************************************************************************************************
     // Main loop initialize
 
-    while (1) {         // While loop running continious, full speed
+    static uint32_t last = 0;
+    static uint32_t last_display_ms = 0;
+    static uint8_t display_phase = 0;
 
-        // service decoder as fast as possible
-        for (int i = 0; i < 5000; i++)
-            Decoder34401_Process();
+    while (1)
+    {
+        Decoder34401_Process();
 
-        HAL_GPIO_TogglePin(GPIOC, TEST_OUT_Pin); // Test LED toggle
+        if (dmm_new_data_counter != last)
+        {
+            uint32_t now = HAL_GetTick();`
 
-        //DisplayMain();
+            if ((now - last_display_ms) >= 100)
+            {
+                last = dmm_new_data_counter;
+                last_display_ms = now;
 
-        //HAL_Delay(10);
-
-        //DisplayAnnunciators();
-
-        //HAL_Delay(10);
+                if (display_phase == 0)
+                {
+                    DisplayMain();
+                    HAL_Delay(7);
+                    display_phase = 1;
+                }
+                else
+                {
+                    DisplayAnnunciators();
+                    HAL_Delay(7);
+                    display_phase = 0;
+                }
+            }
+        }
     }
 
 }

@@ -10,20 +10,20 @@
   * uint8_t status = ReadData() = Call after a WriteRegister and it will return data at register address.
   * WriteDataToRegister(uint8_t reg, uint8_t value) = In one go spedify address and data to send.
   *
-  * Status Registers can read data through the state reading period, and it can only be 
-  * read and cannot be written. Instruction Registers can control most of the functions through the 
-  * "Command Write" cycle and the "Data Write" cycle. "Command Write" specifies the address of the 
-  * register, and then the "Data Write" period can be written to the specified register. And when the specified 
-  * register data is to be read, the master will need to send the "Command write" cycle first. Then use the 
-  * "Data Read" cycle to read the data. In other words, "Command Write" is the set register address, "Data 
-  * Read" is to read register data. 
-  * 
+  * Status Registers can read data through the state reading period, and it can only be
+  * read and cannot be written. Instruction Registers can control most of the functions through the
+  * "Command Write" cycle and the "Data Write" cycle. "Command Write" specifies the address of the
+  * register, and then the "Data Write" period can be written to the specified register. And when the specified
+  * register data is to be read, the master will need to send the "Command write" cycle first. Then use the
+  * "Data Read" cycle to read the data. In other words, "Command Write" is the set register address, "Data
+  * Read" is to read register data.
+  *
   * ER-TFT4.58-1 TFT LCD, 240x960 pixels
   * LCD Controller = ST7701S
   * Response time = 25ms
   * Type = IPS
   * Colours = 262K
-  * 
+  *
   * Controller = LT7680A-R
   * 128Mb version
 */
@@ -113,7 +113,7 @@ void WriteDataToRegister(uint8_t reg, uint8_t value) {
 // Subs to run and sent to the LT7680
 
 void SendAllToLT7680_LT() {
-  
+
     Software_Reset_LT();
     HAL_Delay(10);
     LT7680_PLL_Initial_LT();                  // Initialize PLL first for stable clocks
@@ -167,11 +167,11 @@ void SendAllToLT7680_LT() {
     HAL_Delay(5);
     Set_MISA_LT();                            // Configure the Main Image Start Address
     HAL_Delay(5);
-   
+
     Text_Mode();
     ClearScreen();                          // Draws black 'spaces' across the whole screen - fast
 
-     
+
 }
 
 
@@ -302,7 +302,7 @@ void DrawTextChunks(char* text) {
 // Draw text with FIFO checking
 void DrawText(char* text) {
     //WriteRegister(0xBA);       // Set the reads to the SPI Master Status Register
-    
+
     while (*text != '\0') {
         WriteRegister(0xBA);                                    // Set the reads to the SPI Master Status Register
         // Check the Tx FIFO Full Flag (Bit 6 of REG[BAh])
@@ -490,8 +490,8 @@ void SoftwareReset(void) {       // From LT7680 datasheet
 //**************************************************************/
 
 void SetBacklightFull(void) {
-	
-	WriteRegister(0x84); // Set Prescaler Register (adjust as needed)
+
+    WriteRegister(0x84); // Set Prescaler Register (adjust as needed)
     WriteData(0x00);    // Default prescaler
 
     WriteRegister(0x85); // Timer Clock Divider (adjust as needed)
@@ -539,7 +539,7 @@ void LT7680_PLL_Initial_LT() {
     // Clock calculations
     unsigned int temp = (LCD_HBPD + LCD_HFPD + LCD_HSPW + LCD_XSIZE_TFT) *
         (LCD_VBPD + LCD_VFPD + LCD_VSPW + LCD_YSIZE_TFT) * REFRESH_RATE;              // = 38208000
-  
+
     temp = (temp + 500000) / 1000000; // Round to the nearest MHz           1000000
 
     unsigned short SCLK = temp;
@@ -560,7 +560,7 @@ void LT7680_PLL_Initial_LT() {
     WriteRegister(0x05);
     WriteData((lpllOD_sclk << 6) | (lpllR_sclk << 1) | ((lpllN_sclk >> 8) & 0x1));      // 8A
     //WriteData(0x56);          // test
-    
+
     WriteRegister(0x06);
     WriteData(lpllN_sclk & 0xFF);                                                       // 1B
     //WriteData(0x10);        // test, fixes wierd colour on the "J" on "IanJ" text, but causes flicker
@@ -569,7 +569,7 @@ void LT7680_PLL_Initial_LT() {
     WriteRegister(0x07);
     WriteData((lpllOD_mclk << 6) | (lpllR_mclk << 1) | ((lpllN_mclk >> 8) & 0x1));      // 8A
     //WriteData(0x8A);          // test
-    
+
     WriteRegister(0x08);                // 36
     WriteData(lpllN_mclk & 0xFF);                                                       // 36
     //WriteData(0x56);          // test
@@ -578,7 +578,7 @@ void LT7680_PLL_Initial_LT() {
     WriteRegister(0x09);
     WriteData((lpllOD_cclk << 6) | (lpllR_cclk << 1) | ((lpllN_cclk >> 8) & 0x1));      // 8A
     //WriteData(0x56);          // test
-    
+
     WriteRegister(0x0A);
     WriteData(lpllN_cclk & 0xFF);                                                       // 36
     //WriteData(0x56);          // test
@@ -690,15 +690,15 @@ void SDRAM_Init_LT() {
 
 // Check if the SDRAM is ready for use - Address = 0xE4
 void Check_SDRAM_Ready_LT() {
-    
+
     unsigned char status;
-    
+
     // Poll the SDRAM Ready Flag (Bit 0) in Register 0xE4
     do {
         WriteRegister(0xE4);
         status = ReadData(); // Read the SDRAM status register
     } while ((status & 0x01) == 0);  // Wait until the Ready bit (bit 0) is set
-    
+
     // Optional delay to ensure SDRAM is stable after initialization
     HAL_Delay(10);  // 10 ms delay
 
@@ -1008,13 +1008,13 @@ void Software_ResetPLL_LT() {                                      // OK - needs
 
 // Registers 0x20 to 0x23
 void Set_MISA_LT() {
-    
+
     // Hardcoded Main Image Start Address = 0x00000000
     WriteRegister(0x20); WriteData(0x00);  // MISA[7:0], ensure bit[1:0] = 0
     WriteRegister(0x21); WriteData(0x00);  // MISA[15:8]
     WriteRegister(0x22); WriteData(0x00);  // MISA[23:16]
     WriteRegister(0x23); WriteData(0x00);  // MISA[31:24]
-     
+
 }
 
 
@@ -1214,4 +1214,28 @@ void TFT_WipeTest(void)
 
         HAL_Delay(1);
     }
+}
+
+void RightWipe() {
+    // Right wipe to clear random pixels down the far right hand side	- Only needed if back porch adjustments can't get rid of edge pixels
+    DrawLine(0, 959, 239, 959, 0x00, 0x00, 0x00);	// far right hand vertical line, black, 1 pixel line. (this line hidden!)
+    DrawLine(0, 958, 239, 958, 0x00, 0x00, 0x00);	// (this line hidden!)
+    DrawLine(0, 957, 239, 957, 0x00, 0x00, 0x00);
+    DrawLine(0, 956, 239, 956, 0x00, 0x00, 0x00);
+    DrawLine(0, 955, 239, 955, 0x00, 0x00, 0x00);
+    DrawLine(0, 954, 239, 954, 0x00, 0x00, 0x00);
+    DrawLine(0, 953, 239, 953, 0x00, 0x00, 0x00);
+    DrawLine(0, 952, 239, 952, 0x00, 0x00, 0x00);
+    DrawLine(0, 951, 239, 951, 0x00, 0x00, 0x00);
+}
+
+
+void TestDraw() {
+    // Test only - 400pixel based test lines for viewing the centre line and the left, middle and far right positions.
+    // The internal memory is set up as 400x960 but the leftmost 80 pixels are considered overscan and don't show up, thus 320
+    // startX, startY, endX, endY, colorRED, colorGREEN, colorBLUE
+    DrawLine(0, 0, 239, 0, 0x00, 0xFF, 0xFF);		// far left hand vertical line, black, 1 pixel line. 938 not 960 seems to be far right edge!
+    DrawLine(0, 480, 239, 480, 0xFF, 0x00, 0xFF);	// mid-way
+    DrawLine(0, 959, 239, 959, 0xFF, 0xFF, 0x00);	// far right
+    DrawLine(19, 0, 119, 959, 0xFF, 0xFF, 0xFF);	// centred on TFT horizontally
 }

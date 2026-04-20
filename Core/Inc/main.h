@@ -41,12 +41,14 @@ extern "C" {
 // PB15 = Front panel data OUT
 // PB12 = INT (optional, not required for basic sniffing)
 //==================================================================================================
-#define FP_INT_Pin         GPIO_PIN_12
-#define FP_SCK_Pin         GPIO_PIN_13
-#define FP_DIN_Pin         GPIO_PIN_14
-#define FP_DOUT_Pin        GPIO_PIN_15
+#define FP_INT_Pin         GPIO_PIN_12		// IGFPINT (pin 10 W601)	
+#define FP_SCK_Pin         GPIO_PIN_13		// IGFPSCK (pin 4 W601)
+#define FP_DIN_Pin         GPIO_PIN_14		// IGFPDI (pin 6 W601)
+#define FP_DOUT_Pin        GPIO_PIN_15		// FPD0 (pin 2 W601)
 #define FP_GPIO_Port       GPIOB
 #define FP_EXTI_IRQn       EXTI15_10_IRQn
+											// +5V (pick up on R510)
+											// 0V (pin 1 W601)
 
 
 //==================================================================================================

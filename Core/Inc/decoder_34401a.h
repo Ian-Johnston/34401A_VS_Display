@@ -15,6 +15,9 @@ extern volatile uint16_t dmm_ann_state;         // annunciator bitfield (incl sh
 extern volatile int16_t  dmm_bar;               // parsed bargraph value
 extern volatile uint8_t  dmm_bar_style;         // 0=POSITIVE, 1=FULLSCALE
 extern volatile uint32_t dmm_new_data_counter;  // increments whenever any of above changes
+extern volatile uint32_t dmm_main_counter;
+extern volatile uint32_t dmm_ann_counter;
+extern volatile uint32_t dmm_bar_counter;
 
 // ===== Decoder API =====
 void Decoder34401_Init(void);       // enable DWT micros (recommended)

@@ -15,9 +15,12 @@
 #include "display.h"
 #include <string.h>  // For strchr, strncpy
 #include <stdio.h>   // For debugging (optional)
+#include "decoder_34401a.h"
 
 //#define DURATION_MS 5000     // 5 seconds in milliseconds
 #define TIMER_INTERVAL_MS 35 // The interval of your timed sub in milliseconds
+
+volatile char tft_main_debug[16];
 
 // Display colours default
 uint32_t MainColourFore = 0xFFFFFF;			// White FFFFFF
@@ -31,6 +34,37 @@ uint32_t SplashIanJColourFore = 0xFFFF00;	// Yellow FFFF00
 void DisplayMain(void)
 {
 
+	// check for non ASCII chars
+	int i;
+	for (i = 0; dmm_main[i] != 0; i++)
+	{
+		unsigned char c = (unsigned char)dmm_main[i];
+
+		if (c < 0x20 || c > 0x7E)
+			return;
+	}
+
+	SetTextColors(MainColourFore, BackgroundColour); // Foreground, Background
+	ConfigureFontAndPosition(
+		0b00,    // Internal CGROM
+		0b10,    // Font size
+		0b00,    // ISO 8859-1
+		0,       // Full alignment enabled
+		0,       // Chroma keying disabled
+		1,       // Rotate 90 degrees counterclockwise
+		0b11,    // Width multiplier
+		0b11,    // Height multiplier
+		1,       // Line spacing
+		4,       // Character spacing
+		Xpos_MAIN,     // Cursor X
+		Ypos_MAIN      // Cursor Y
+	);
+
+	ShiftUnitsRight(dmm_main);		// Shift last 4 chars to the right if match criteria
+
+	FixUnitText(dmm_main);			// Fix units
+
+	DrawText(dmm_main);
 }
 
 
@@ -39,12 +73,12 @@ void DisplayMain(void)
 void ShiftUnitsRight(char* text1)
 {
 	static const char* unit4[] = {
-		" VDC", "MVDC",
+		" VDC", "mVDC",
 		"KOHM", " OHM", "MOHM", "GOHM",
 		"MAAC", "UAAC", "UADC", "MADC",
-		" ADC", " AAC", "MVAC", " VAC",
+		" ADC", " AAC", "mVAC", " VAC",
 		"MSEC", " SEC",
-		"  HZ", " MHZ",
+		"  HZ", "MHZ ", "KHZ ",
 		"  DB"
 	};
 
@@ -56,12 +90,22 @@ void ShiftUnitsRight(char* text1)
 			text1[11] == p[2] &&
 			text1[12] == p[3]) {
 
-			// shift ONLY the 4-char unit suffix right by one
+			// first shift (to 10–13)
 			text1[13] = text1[12];
 			text1[12] = text1[11];
 			text1[11] = text1[10];
 			text1[10] = text1[9];
 			text1[9] = ' ';
+
+			// if last char is space, shift once more (to 11–14)
+			if (text1[13] == ' ') {
+				text1[14] = text1[13];
+				text1[13] = text1[12];
+				text1[12] = text1[11];
+				text1[11] = text1[10];
+				text1[10] = ' ';
+			}
+
 			return;
 		}
 	}
@@ -69,7 +113,7 @@ void ShiftUnitsRight(char* text1)
 
 
 // Replace characters
-// Enter the before & after of the 4 chat text to be replaced
+// Enter the before & after of the 4 char text to be replaced
 void FixUnitText(char* text1)
 {
 	static const struct {
@@ -79,6 +123,7 @@ void FixUnitText(char* text1)
 		{ "MSEC", "  ms" },
 		{ " SEC", "   s" },
 		{ "  HZ", "  Hz" },
+		{ " KHZ", " kHz" },
 		{ " MHZ", " MHz" },
 		{ "  DB", "  dB" },
 		{ "MVAC", "mVAC" },
@@ -110,9 +155,63 @@ void FixUnitText(char* text1)
 }
 
 
-void DisplayAnnunciators() {
+void DisplayAnnunciators(void)
+{
+	const char* AnnuncNames[15] = {
+		"SMP", "ADRS", "RMT", "MAN", "TRIG",
+		"HOLD", "MEM", "RATIO", "MATH", "ERROR",
+		"REAR", "SHIFT", "DIODE", "CONT", "4W"
+	};
 
+	int AnnuncYCoords[15] = {
+		3,   // SMP
+		60,   // ADRS
+		140,  // RMT
+		210,  // MAN
+		275,  // TRIG
+		355,  // HOLD
+		435,  // MEM
+		500,  // RATIO
+		600,  // MATH
+		685,  // ERROR
+		780,  // REAR
+		860,  // SHIFT
 
+		700,  // DIODE
+		810,  // CONT
+		900   // 4W
+	};
+
+	for (int i = 0; i < 15; i++)
+	{
+		if (dmm_ann_state & (1U << i))
+			SetTextColors(AnnunColourFore, 0x000000);
+		else
+			SetTextColors(0x000000, 0x000000);
+
+		int xpos = Xpos_ANNUNC;
+
+		// Move DIODE, CONT, 4W left
+		if (i >= 12)   // indices 12,13,14
+			xpos = Xpos_ANNUNC - 160;
+
+		ConfigureFontAndPosition(
+			0b00,    // Internal CGROM
+			0b00,    // Font size
+			0b00,    // ISO 8859-1
+			0,       // Full alignment enabled
+			0,       // Chroma keying disabled
+			1,       // Rotate 90 degrees counterclockwise
+			0b01,    // Width multiplier
+			0b01,    // Height multiplier
+			5,       // Line spacing
+			0,       // Character spacing
+			xpos,     // Cursor X
+			AnnuncYCoords[i]     // Cursor Y
+		);
+
+		DrawText(AnnuncNames[i]);
+	}
 }
 
 
@@ -162,8 +261,8 @@ void DisplaySplash() {
 
 	// Copy the 13 source characters (displayWithPunct is always 13 chars)
 	for (i = 0; i < 13; i++) {
-//		char c = displayWithPunct[i];
-//		text1[i] = (c == '\0') ? ' ' : c;
+		//		char c = displayWithPunct[i];
+		//		text1[i] = (c == '\0') ? ' ' : c;
 	}
 
 	// Default: add trailing space as the 14th character

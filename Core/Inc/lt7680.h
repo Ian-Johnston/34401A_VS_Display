@@ -106,12 +106,13 @@ void SetCanvasImageWidth_LT(void);
 #define SPI_CS_HIGH()      HAL_GPIO_WritePin(SPI_CS_PORT, SPI_CS_PIN, GPIO_PIN_SET)
 
 // TFT LCD Panel parameters - BuyDisplay (Some of them plus refresh rate are used to calculate CCLK, MCLK & PCLK)
-#define LCD_VBPD				10			// Vertical Back Porch for 240x960 LCD  - 11 (from example) = 0x17			Spec says 11 but 10 removes line of pixels on the edge with the help of main.c blanking
-#define LCD_VFPD				5			// Vertical Front Porch for 240x960 LCD - 5  (from example) = 0x05
+#define LCD_VBPD				10			// Vertical Back Porch
+#define LCD_VFPD				5			// Vertical Front Porch
 #define LCD_VSPW				5			// Vertical Start Position
-#define LCD_HBPD				136			// Horizontal Back Porch													Spec says 128 but 136 removes line of pixels on the edge
+#define LCD_HBPD				136			// Horizontal Back Porch
 #define LCD_HFPD				5			// Horizontal Front Porch
 #define LCD_HSPW				5			// Horizontal Start Position
+
 #define LCD_XSIZE_TFT			240			// Resolution - Horizontal pixels
 #define LCD_YSIZE_TFT			960			// Resolution - Vertical Pixels
 #define HSYNC_ACTIVE			0			// 0 = HSYNC Low Active
