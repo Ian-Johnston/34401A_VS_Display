@@ -50,15 +50,40 @@ void WaitForTextReady(void)
 
 void DisplayMain(void)
 {
+	char text[16];
+	uint16_t blink_mask = dmm_blink_mask;
+	static uint32_t last_blink_ms = 0;
+	static uint8_t blink_phase = 1;
+	uint32_t now = HAL_GetTick();
 
-	// check for non ASCII chars
+	// check for non ASCII chars and make local copy
 	int i;
-	for (i = 0; dmm_main[i] != 0; i++)
+	for (i = 0; i < 15; i++)
 	{
 		unsigned char c = (unsigned char)dmm_main[i];
+		text[i] = dmm_main[i];
+
+		if (c == 0)
+			break;
 
 		if (c < 0x20 || c > 0x7E)
 			return;
+	}
+	text[15] = 0;
+
+	if ((now - last_blink_ms) >= 250)
+	{
+		last_blink_ms = now;
+		blink_phase ^= 1;
+	}
+
+	if (!blink_phase)
+	{
+		for (i = 0; i < 14; i++)
+		{
+			if (blink_mask & (1U << i))
+				text[i] = ' ';
+		}
 	}
 
 	SetTextColors(MainColourFore, BackgroundColour); // Foreground, Background
@@ -77,15 +102,15 @@ void DisplayMain(void)
 		Ypos_MAIN      // Cursor Y
 	);
 
-	ShiftUnitsRight1(dmm_main);		// Shift last 4 chars to the right by 1 char if match criteria
+	ShiftUnitsRight1(text);		// Shift last 4 chars to the right by 1 char if match criteria
 
-	ShiftUnitsRight2(dmm_main);		// Shift last 4 chars to the right by 2 chars if match criteria
+	ShiftUnitsRight2(text);		// Shift last 4 chars to the right by 2 chars if match criteria
 
-	FixUnitText(dmm_main);			// Fix units
+	FixUnitText(text);			// Fix units
 
-	WaitForTextReady();				// Wait for comms with LT7680A-R to complete before sending mext batch
+	WaitForTextReady();			// Wait for comms with LT7680A-R to complete before sending mext batch
 
-	DrawText(dmm_main);				// Send to LT7680A-R
+	DrawText(text);				// Send to LT7680A-R
 }
 
 
@@ -94,7 +119,7 @@ void DisplayMain(void)
 void ShiftUnitsRight1(char* text1)
 {
 	static const char* unit4[] = {
-		" VDC", "mVDC", " OHM", "KOHM", "MOHM", " ADC", "mADC", " AAC", "mAAC", "uSEC", "mMIN", "mMAX",
+		" VDC", "mVDC", " OHM", "KOHM", "MOHM", " ADC", "mADC", " AAC", "mAAC", "uSEC", "mSEC", " SEC", "mMIN", "mMAX", "mVAC", " VAC", " dBm",
 		"END1"
 	};
 
@@ -122,7 +147,7 @@ void ShiftUnitsRight1(char* text1)
 void ShiftUnitsRight2(char* text1)
 {
 	static const char* unit4[] = {
-		" HZ ", "KHZ ",
+		" HZ ", "KHZ ", " dB ",
 		"END2"
 	};
 

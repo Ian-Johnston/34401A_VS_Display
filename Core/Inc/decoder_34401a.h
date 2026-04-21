@@ -18,6 +18,8 @@ extern volatile uint32_t dmm_new_data_counter;  // increments whenever any of ab
 extern volatile uint32_t dmm_main_counter;
 extern volatile uint32_t dmm_ann_counter;
 extern volatile uint32_t dmm_bar_counter;
+extern volatile uint16_t dmm_blink_mask;   // bits 0..13 = blink this character position
+//extern volatile uint8_t  dmm_text_dim;     // 0 = normal, 1 = dim
 
 // ===== Decoder API =====
 void Decoder34401_Init(void);       // enable DWT micros (recommended)

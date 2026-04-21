@@ -17,6 +17,9 @@ volatile int16_t  dmm_bar;
 volatile uint8_t  dmm_bar_style;        // 0=POSITIVE, 1=FULLSCALE
 volatile uint32_t dmm_new_data_counter;
 
+volatile uint16_t dmm_blink_mask;
+static void decodeControlFrame(void);
+
 // ===== Internal sniff state =====
 static volatile uint8_t  byte_len;
 static volatile uint8_t  input_acc, output_acc;
@@ -64,6 +67,7 @@ static frame_state_t frame_state = FRAME_INIT;
 static uint8_t msg_idx = 0;
 static bool need_reset = true;
 static char msg_work[16];
+static uint16_t msg_blink_work = 0;
 
 static void dmm_putc_safe(char c)
 {
@@ -176,6 +180,7 @@ static void messageByte(uint8_t byte)
 {
     if (need_reset) {
         msg_idx = 0;
+        msg_blink_work = 0;
         memset((void*)msg_work, ' ', 14);   // build a fixed-width field here
         msg_work[14] = '\0';
         msg_work[15] = '\0';
@@ -183,12 +188,21 @@ static void messageByte(uint8_t byte)
     }
 
     switch (byte) {
-    case 0x84: dmm_putc_safe('.'); break;
-    case 0x86: dmm_putc_safe(','); break;
+    case 0x84:
+        dmm_putc_safe('.');
+        break;
+
+    case 0x86:
+        dmm_putc_safe(',');
+        break;
 
     case 0x8d:
-        // original: mark previous char blinking; we ignore blinking
-        // fall through to ':'
+        // previous character blinks
+        if (msg_idx > 0u)
+            msg_blink_work |= (uint16_t)(1u << (msg_idx - 1u));
+        dmm_putc_safe(':');
+        break;
+
     case 0x8c:
         dmm_putc_safe(':');
         break;
@@ -213,6 +227,9 @@ static void messageByte(uint8_t byte)
 void Decoder34401_Init(void)
 {
     DWT_Init();
+
+    dmm_blink_mask = 0;
+    msg_blink_work = 0;
 
     // Clear outputs
     memset((void*)dmm_main, ' ', 14);
@@ -335,6 +352,7 @@ void Decoder34401_Process(void)
         case FRAME_MESSAGE:
             if (lastBytesAreEof()) {
                 memcpy((void*)dmm_main, (const void*)msg_work, sizeof(dmm_main));
+                dmm_blink_mask = msg_blink_work;
                 dmm_new_data_counter++;
                 dmm_main_counter++;
                 need_reset = true;
@@ -359,7 +377,7 @@ void Decoder34401_Process(void)
 
         case FRAME_CONTROL:
             if (lastBytesAreEof()) {
-                // You can later decode blink/control if you want; we ignore for now.
+                decodeControlFrame();
                 endFrame();
             }
             break;
@@ -412,4 +430,35 @@ void Decoder34401_Process(void)
             endFrame();
         }
     }
+}
+
+
+static void decodeControlFrame(void)
+{
+    uint16_t cmd;
+
+    if (buf_len < 2u)
+        return;
+
+    cmd = ((uint16_t)input_buf[0] << 8) | (uint16_t)input_buf[1];
+
+    switch (cmd) {
+    case 0x0049: dmm_blink_mask = (1u << 0);  break;
+    case 0x7149: dmm_blink_mask = (1u << 1);  break;
+    case 0x6249: dmm_blink_mask = (1u << 2);  break;
+    case 0x5349: dmm_blink_mask = (1u << 3);  break;
+    case 0x4449: dmm_blink_mask = (1u << 4);  break;
+    case 0x3549: dmm_blink_mask = (1u << 5);  break;
+    case 0x2649: dmm_blink_mask = (1u << 6);  break;
+    case 0x1749: dmm_blink_mask = (1u << 7);  break;
+    case 0x0849: dmm_blink_mask = (1u << 8);  break;
+    case 0x7949: dmm_blink_mask = (1u << 9);  break;
+    case 0x6A49: dmm_blink_mask = (1u << 10); break;
+    case 0x2B49: dmm_blink_mask = (1u << 11); break;
+    default:
+        return;
+    }
+
+    dmm_new_data_counter++;
+    dmm_main_counter++;
 }
