@@ -31,6 +31,21 @@ uint32_t SplashIanJColourFore = 0xFFFF00;	// Yellow FFFF00
 
 //************************************************************************************************************************************************************
 
+
+void WaitForTextReady(void)
+{
+	uint8_t Registerdata;
+
+	WriteRegister(0xBA);                      // SPI Master Status Register
+	Registerdata = ReadData();
+
+	while (Registerdata & (1 << 6)) {         // Tx FIFO Full
+		WriteRegister(0xBA);
+		Registerdata = ReadData();
+	}
+}
+
+
 void DisplayMain(void)
 {
 
@@ -63,6 +78,8 @@ void DisplayMain(void)
 	ShiftUnitsRight(dmm_main);		// Shift last 4 chars to the right if match criteria
 
 	FixUnitText(dmm_main);			// Fix units
+
+	WaitForTextReady();
 
 	DrawText(dmm_main);
 }
@@ -209,6 +226,8 @@ void DisplayAnnunciators(void)
 			xpos,     // Cursor X
 			AnnuncYCoords[i]     // Cursor Y
 		);
+
+		WaitForTextReady();
 
 		DrawText(AnnuncNames[i]);
 	}

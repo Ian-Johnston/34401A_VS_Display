@@ -168,7 +168,7 @@ int main(void) {
     //**************************************************************************************************
     // Main loop initialize
 
-    static uint32_t last = 0;
+    static uint32_t pending = 0;
     static uint32_t last_display_ms = 0;
     static uint8_t display_phase = 0;
 
@@ -176,26 +176,27 @@ int main(void) {
     {
         Decoder34401_Process();
 
-        if (dmm_new_data_counter != last)
+        if (dmm_new_data_counter != pending)
+            pending = dmm_new_data_counter;
+
+        if (pending != 0)
         {
             uint32_t now = HAL_GetTick();
 
-            if ((now - last_display_ms) >= 100)
+            if ((now - last_display_ms) >= 10)
             {
-                last = dmm_new_data_counter;
                 last_display_ms = now;
 
                 if (display_phase == 0)
                 {
                     DisplayMain();
-                    HAL_Delay(7);
                     display_phase = 1;
                 }
                 else
                 {
                     DisplayAnnunciators();
-                    HAL_Delay(7);
                     display_phase = 0;
+                    pending = 0;   // both phases done
                 }
             }
         }
