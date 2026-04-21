@@ -25,6 +25,8 @@ volatile char tft_main_debug[16];
 // Display colours default
 uint32_t MainColourFore = 0xFFFFFF;			// White FFFFFF
 uint32_t AnnunColourFore = 0x00FF00;		// Green 00FF00
+uint32_t AnnunColourForeYel = 0xFFFF00;		// Yellow FFFF00
+uint32_t AnnunColourForeRed = 0xFF0000;		// Red FF0000
 uint32_t BackgroundColour = 0x000000;		// Black 000000
 uint32_t SplashIanJColourFore = 0xFFFF00;	// Yellow FFFF00
 
@@ -75,7 +77,9 @@ void DisplayMain(void)
 		Ypos_MAIN      // Cursor Y
 	);
 
-	ShiftUnitsRight(dmm_main);		// Shift last 4 chars to the right if match criteria
+	ShiftUnitsRight1(dmm_main);		// Shift last 4 chars to the right by 1 char if match criteria
+
+	ShiftUnitsRight2(dmm_main);		// Shift last 4 chars to the right by 2 chars if match criteria
 
 	FixUnitText(dmm_main);			// Fix units
 
@@ -85,18 +89,13 @@ void DisplayMain(void)
 }
 
 
-// Shift chars right - We have more space on the TFT so can afford to do this
+// Shift chars right by 1
 // Enter the original four chars to be shifted
-void ShiftUnitsRight(char* text1)
+void ShiftUnitsRight1(char* text1)
 {
 	static const char* unit4[] = {
-		" VDC", "mVDC",
-		"KOHM", " OHM", "MOHM", "GOHM",
-		"MAAC", "UAAC", "UADC", "MADC",
-		" ADC", " AAC", "mVAC", " VAC",
-		"MSEC", " SEC",
-		"  HZ", "MHZ ", "KHZ ",
-		"  DB"
+		" VDC", "mVDC", " OHM", "KOHM", "MOHM", " ADC", "mADC", " AAC", "mAAC", "uSEC", "mMIN", "mMAX",
+		"END1"
 	};
 
 	for (int u = 0; u < (int)(sizeof(unit4) / sizeof(unit4[0])); u++) {
@@ -107,22 +106,40 @@ void ShiftUnitsRight(char* text1)
 			text1[11] == p[2] &&
 			text1[12] == p[3]) {
 
-			// first shift (to 10–13)
 			text1[13] = text1[12];
 			text1[12] = text1[11];
 			text1[11] = text1[10];
 			text1[10] = text1[9];
 			text1[9] = ' ';
+			return;
+		}
+	}
+}
 
-			// if last char is space, shift once more (to 11–14)
-			if (text1[13] == ' ') {
-				text1[14] = text1[13];
-				text1[13] = text1[12];
-				text1[12] = text1[11];
-				text1[11] = text1[10];
-				text1[10] = ' ';
-			}
 
+// Shift chars right by 2
+// Enter the original four chars to be shifted
+void ShiftUnitsRight2(char* text1)
+{
+	static const char* unit4[] = {
+		" HZ ", "KHZ ",
+		"END2"
+	};
+
+	for (int u = 0; u < (int)(sizeof(unit4) / sizeof(unit4[0])); u++) {
+		const char* p = unit4[u];
+
+		if (text1[9] == p[0] &&
+			text1[10] == p[1] &&
+			text1[11] == p[2] &&
+			text1[12] == p[3]) {
+
+			text1[14] = '\0';      // remove trailing space
+			text1[13] = text1[11];
+			text1[12] = text1[10];
+			text1[11] = text1[9];
+			text1[10] = ' ';
+			text1[9] = ' ';
 			return;
 		}
 	}
@@ -202,9 +219,18 @@ void DisplayAnnunciators(void)
 	for (int i = 0; i < 15; i++)
 	{
 		if (dmm_ann_state & (1U << i))
-			SetTextColors(AnnunColourFore, 0x000000);
+		{
+			if (i == 9)   // ERROR
+				SetTextColors(AnnunColourForeRed, 0x000000);
+			else if (i >= 12)   // DIODE, CONT, 4W
+				SetTextColors(AnnunColourForeYel, 0x000000);
+			else
+				SetTextColors(AnnunColourFore, 0x000000);
+		}
 		else
+		{
 			SetTextColors(0x000000, 0x000000);
+		}
 
 		int xpos = Xpos_ANNUNC;
 

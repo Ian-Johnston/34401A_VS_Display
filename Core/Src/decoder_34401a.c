@@ -444,6 +444,17 @@ void Decoder34401_Process(void)
                             shift_window_start_us = now_us;   // extend window
                         }
                     }
+                    else {
+                        // Any other button consumes/clears SHIFT
+                        shift_window_active = false;
+                        shift_press_count = 0;
+
+                        if (dmm_ann_state & 0x0800u) {
+                            dmm_ann_state &= (uint16_t)~0x0800u;
+                            dmm_new_data_counter++;
+                            dmm_ann_counter++;
+                        }
+                    }
                 }
                 endFrame();
             }

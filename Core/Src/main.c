@@ -171,6 +171,7 @@ int main(void) {
     static uint32_t pending = 0;
     static uint32_t last_display_ms = 0;
     static uint8_t display_phase = 0;
+    static uint32_t last_led_ms = 0;
 
     while (1)
     {
@@ -183,6 +184,7 @@ int main(void) {
         {
             uint32_t now = HAL_GetTick();
 
+            // Display timing (fast)
             if ((now - last_display_ms) >= 10)
             {
                 last_display_ms = now;
@@ -196,8 +198,15 @@ int main(void) {
                 {
                     DisplayAnnunciators();
                     display_phase = 0;
-                    pending = 0;   // both phases done
+                    pending = 0;
                 }
+            }
+
+            // LED timing (slow, e.g. 200 ms)
+            if ((now - last_led_ms) >= 200)
+            {
+                last_led_ms = now;
+                HAL_GPIO_TogglePin(GPIOC, TEST_OUT_Pin);
             }
         }
     }
