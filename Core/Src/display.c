@@ -83,9 +83,9 @@ void DisplayMain(void)
 
 	FixUnitText(dmm_main);			// Fix units
 
-	WaitForTextReady();
+	WaitForTextReady();				// Wait for comms with LT7680A-R to complete before sending mext batch
 
-	DrawText(dmm_main);
+	DrawText(dmm_main);				// Send to LT7680A-R
 }
 
 

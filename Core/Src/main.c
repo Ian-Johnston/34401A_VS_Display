@@ -141,20 +141,16 @@ int main(void) {
 
     HardwareReset();                // Reset LT7680 - Pull LCM_RESET low for 100ms and wait
 
-    HAL_Delay(1000);
+    HAL_Delay(50);
 
     BuyDisplay_Init();              // Initialize ST7701S BuyDisplay 3.71" driver IC
 
-    HAL_Delay(100);
+    HAL_Delay(50);
 
     SendAllToLT7680_LT();           // run subs to setup LT7680 based on Levetop info
 
     HAL_Delay(10);
 
-    // Main loop timer
-    //SetTimerDuration(35);          // 35 ms timed action set.......not used
-    //HAL_Delay(5);
-    //SetBacklightFull();
     ConfigurePWMAndSetBrightness(BACKLIGHTFULL);  // Configure Timer-1 and PWM-1 for backlighting. Settable 0-100%
 
     ClearScreen();                  // Again.....
