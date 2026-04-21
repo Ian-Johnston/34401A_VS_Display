@@ -37,33 +37,9 @@ static uint8_t input_buf[100];
 static uint8_t output_buf[100];
 static uint8_t buf_len;
 
-// ===== Debug =====
-static volatile uint8_t dbg_ann_len;
-static volatile uint8_t dbg_ann_b0;
-static volatile uint8_t dbg_ann_b1;
-static volatile uint8_t dbg_ann_b2;
-static volatile uint8_t dbg_ann_b3;
-static volatile uint8_t dbg_ann_b4;
-static volatile uint8_t dbg_ann_b5;
-static volatile uint8_t dbg_ann_b6;
-static volatile uint8_t dbg_ann_b7;
-static volatile uint8_t dbg_btn_len;
-static volatile uint8_t dbg_btn_o0;
-static volatile uint8_t dbg_btn_o1;
-static volatile uint8_t dbg_btn_o2;
-static volatile uint8_t dbg_btn_o3;
-static volatile uint8_t dbg_btn_o4;
-static volatile uint8_t dbg_btn_o5;
-static volatile uint8_t dbg_btn_i0;
-static volatile uint8_t dbg_btn_i1;
-static volatile uint8_t dbg_btn_i2;
-static volatile uint8_t dbg_btn_i3;
-static volatile uint8_t dbg_btn_i4;
-static volatile uint8_t dbg_btn_i5;
-static volatile uint32_t dbg_btn_code_last;
-static volatile uint32_t dbg_btn_code_prev;
-static volatile uint32_t dbg_btn_count;
+// ===== Minimal debug =====
 static volatile uint32_t dbg_byte_overrun_count = 0;
+
 volatile uint32_t dmm_main_counter;
 volatile uint32_t dmm_ann_counter;
 volatile uint32_t dmm_bar_counter;
@@ -265,9 +241,6 @@ void Decoder34401_Init(void)
     shift_press_count = 0;
     shift_window_active = false;
 
-    dbg_btn_code_last = 0;
-    dbg_btn_code_prev = 0;
-    dbg_btn_count = 0;
     dbg_byte_overrun_count = 0;
 
     dmm_main_counter = 0;
@@ -376,17 +349,6 @@ void Decoder34401_Process(void)
 
         case FRAME_ANNUNCIATORS:
             if (lastBytesAreEof()) {
-                dbg_ann_len = buf_len;
-
-                dbg_ann_b0 = (buf_len > 0u) ? input_buf[0] : 0u;
-                dbg_ann_b1 = (buf_len > 1u) ? input_buf[1] : 0u;
-                dbg_ann_b2 = (buf_len > 2u) ? input_buf[2] : 0u;
-                dbg_ann_b3 = (buf_len > 3u) ? input_buf[3] : 0u;
-                dbg_ann_b4 = (buf_len > 4u) ? input_buf[4] : 0u;
-                dbg_ann_b5 = (buf_len > 5u) ? input_buf[5] : 0u;
-                dbg_ann_b6 = (buf_len > 6u) ? input_buf[6] : 0u;
-                dbg_ann_b7 = (buf_len > 7u) ? input_buf[7] : 0u;
-
                 // same indices as original: input_buf[3], input_buf[2]
                 if (buf_len >= 4u) {
                     publishAnnunciators(input_buf[3], input_buf[2]);
@@ -404,31 +366,11 @@ void Decoder34401_Process(void)
 
         case FRAME_BUTTON:
             if (input_buf[buf_len - 1u] == 0x66) {
-                dbg_btn_len = buf_len;
-
-                dbg_btn_o0 = (buf_len > 0u) ? output_buf[0] : 0u;
-                dbg_btn_o1 = (buf_len > 1u) ? output_buf[1] : 0u;
-                dbg_btn_o2 = (buf_len > 2u) ? output_buf[2] : 0u;
-                dbg_btn_o3 = (buf_len > 3u) ? output_buf[3] : 0u;
-                dbg_btn_o4 = (buf_len > 4u) ? output_buf[4] : 0u;
-                dbg_btn_o5 = (buf_len > 5u) ? output_buf[5] : 0u;
-
-                dbg_btn_i0 = (buf_len > 0u) ? input_buf[0] : 0u;
-                dbg_btn_i1 = (buf_len > 1u) ? input_buf[1] : 0u;
-                dbg_btn_i2 = (buf_len > 2u) ? input_buf[2] : 0u;
-                dbg_btn_i3 = (buf_len > 3u) ? input_buf[3] : 0u;
-                dbg_btn_i4 = (buf_len > 4u) ? input_buf[4] : 0u;
-                dbg_btn_i5 = (buf_len > 5u) ? input_buf[5] : 0u;
-
                 if (buf_len >= 3u) {
                     uint32_t code =
                         ((uint32_t)output_buf[0] << 16) |
                         ((uint32_t)output_buf[1] << 8) |
                         ((uint32_t)output_buf[2]);
-
-                    dbg_btn_code_prev = dbg_btn_code_last;
-                    dbg_btn_code_last = code;
-                    dbg_btn_count++;
 
                     // SHIFT button code
                     if (code == 7839183u) {

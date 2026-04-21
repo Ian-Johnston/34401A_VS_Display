@@ -218,6 +218,7 @@ void DisplayAnnunciators(void)
 
 	for (int i = 0; i < 15; i++)
 	{
+		//if (1)
 		if (dmm_ann_state & (1U << i))
 		{
 			if (i == 9)   // ERROR
@@ -259,110 +260,3 @@ void DisplayAnnunciators(void)
 	}
 }
 
-
-void DisplaySplash() {
-
-	// IanJ
-	SetTextColors(SplashIanJColourFore, BackgroundColour); // Foreground, Background
-	ConfigureFontAndPosition(
-		0b00,    // Internal CGROM
-		0b00,    // Font size
-		0b00,    // ISO 8859-1
-		0,       // Full alignment enabled
-		0,       // Chroma keying disabled
-		1,       // Rotate 90 degrees counterclockwise
-		0b00,    // Width multiplier
-		0b01,    // Height multiplier
-		1,       // Line spacing
-		4,       // Character spacing
-		Xpos_SPLASH,     // Cursor X
-		Ypos_SPLASH      // Cursor Y
-	);
-
-	DrawText("Protocol by xi, TFT Upgrade by Ian Johnston") & '\0';
-
-	HAL_Delay(10);
-
-	// Main
-	SetTextColors(MainColourFore, BackgroundColour); // Foreground, Background
-	ConfigureFontAndPosition(
-		0b00,    // Internal CGROM
-		0b10,    // Font size
-		0b00,    // ISO 8859-1
-		0,       // Full alignment enabled
-		0,       // Chroma keying disabled
-		1,       // Rotate 90 degrees counterclockwise
-		0b11,    // Width multiplier
-		0b11,    // Height multiplier
-		1,       // Line spacing
-		4,       // Character spacing
-		Xpos_MAIN,     // Cursor X
-		Ypos_MAIN      // Cursor Y
-	);
-
-	// Always draw exactly 14 characters (13 source + 1 added)
-	char text1[15];   // 14 chars + terminator
-	int i;
-
-	// Copy the 13 source characters (displayWithPunct is always 13 chars)
-	for (i = 0; i < 13; i++) {
-		//		char c = displayWithPunct[i];
-		//		text1[i] = (c == '\0') ? ' ' : c;
-	}
-
-	// Default: add trailing space as the 14th character
-	text1[13] = ' ';
-	text1[14] = '\0';
-
-	memcpy(text1, "##############", 14);
-	text1[14] = '\0';
-
-	DrawText(text1);
-
-	HAL_Delay(10);
-
-	// Annunciators
-	const char* AnnuncNames[12] = {
-		"SMPL", "REM", "SRQ", "ADRS", "AC+DC", "4Wohm",
-		"AZOFF", "MRNG", "MATH", "REAR", "ERR", "SHIFT"
-	};
-
-	// Set Y-position of the annunciators
-	int AnnuncYCoords[12] = {
-		10,   // SMPL
-		87,   // REM
-		151,  // SRQ
-		212,  // ADRS
-		289,  // AC+DC
-		382,  // 4Wohm
-		477,  // AZOFF
-		571,  // MRNG
-		649,  // MATH
-		726,  // REAR
-		803,  // ERR
-		860   // SHIFT
-	};
-
-	for (int i = 0; i < 12; i++) {
-
-		SetTextColors(AnnunColourFore, BackgroundColour); // ON
-		ConfigureFontAndPosition(
-			0b00,    // Internal CGROM
-			0b00,    // 16-dot font size
-			0b00,    // ISO 8859-1
-			0,       // Full alignment enabled
-			0,       // Chroma keying disabled
-			1,       // Rotate 90 degrees counterclockwise
-			0b01,    // Width X0
-			0b01,    // Height X0
-			5,       // Line spacing
-			0,       // Character spacing
-			Xpos_ANNUNC,
-			AnnuncYCoords[i]
-		);
-
-		DrawText(AnnuncNames[i]);
-		HAL_Delay(10);
-	}
-
-}

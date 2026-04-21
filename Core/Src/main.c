@@ -14,7 +14,10 @@
   *
   ******************************************************************************
   *
-  * For 34401A sniffing:
+  * Sniffing code (decoder_34401a.c) gleaned from here, and modified
+  * https://github.com/openscopeproject/HP34401a-OLED-FW/
+  * 
+  * 34401A sniffing:
   * ========================================
   * BluePill PB13 = SCK (EXTI rising edge)
   *          PB14 = FP DATA IN
