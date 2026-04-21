@@ -178,7 +178,7 @@ int main(void) {
 
         if (dmm_new_data_counter != last)
         {
-            uint32_t now = HAL_GetTick();`
+            uint32_t now = HAL_GetTick();
 
             if ((now - last_display_ms) >= 100)
             {

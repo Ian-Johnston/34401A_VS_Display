@@ -6,6 +6,10 @@
 // Match original config.h
 #define MAX_SCK_DELAY_US 1500u  // 1.5ms
 
+// FIFO size must be power of 2 for simple wrap
+#define BYTE_FIFO_SIZE 64u
+#define BYTE_FIFO_MASK (BYTE_FIFO_SIZE - 1u)
+
 // ===== Extracted data =====
 volatile char     dmm_main[16];
 volatile uint16_t dmm_ann_state;
@@ -15,9 +19,16 @@ volatile uint32_t dmm_new_data_counter;
 
 // ===== Internal sniff state =====
 static volatile uint8_t  byte_len;
-static volatile bool     byte_ready;
-static volatile bool     byte_not_read;
-static volatile uint8_t  input_byte, output_byte, input_acc, output_acc;
+static volatile uint8_t  input_acc, output_acc;
+
+typedef struct {
+    uint8_t in;
+    uint8_t out;
+} sniff_byte_t;
+
+static volatile sniff_byte_t byte_fifo[BYTE_FIFO_SIZE];
+static volatile uint8_t fifo_wr;
+static volatile uint8_t fifo_rd;
 
 static uint32_t last_us;
 
@@ -56,9 +67,6 @@ static volatile uint32_t dbg_byte_overrun_count = 0;
 volatile uint32_t dmm_main_counter;
 volatile uint32_t dmm_ann_counter;
 volatile uint32_t dmm_bar_counter;
-
-
-
 
 // ===== SHIFT handling =====
 static uint32_t shift_window_start_us = 0;
@@ -129,11 +137,12 @@ static void processShiftWindow(void)
     if (shift_window_active) {
         uint32_t now_us = micros32();
 
-        // 120 ms quiet window to collect single/double presses
-        if ((uint32_t)(now_us - shift_window_start_us) > 120000u) {
+        // 300 ms quiet window to collect single/double presses
+        if ((uint32_t)(now_us - shift_window_start_us) > 300000u) {
             if (shift_press_count & 1u) {
                 dmm_ann_state ^= 0x0800u;
                 dmm_new_data_counter++;
+                dmm_ann_counter++;
             }
 
             shift_press_count = 0;
@@ -183,7 +192,7 @@ static void publishAnnunciators(uint8_t h, uint8_t l)
     if (new_state != dmm_ann_state) {
         dmm_ann_state = new_state;
         dmm_new_data_counter++;
-        dmm_bar_counter++;
+        dmm_ann_counter++;
     }
 }
 
@@ -245,9 +254,9 @@ void Decoder34401_Init(void)
 
     // Internal
     byte_len = 0;
-    byte_ready = false;
-    byte_not_read = false;
     input_acc = output_acc = 0;
+    fifo_wr = 0;
+    fifo_rd = 0;
     buf_len = 0;
     frame_state = FRAME_INIT;
     need_reset = true;
@@ -259,6 +268,7 @@ void Decoder34401_Init(void)
     dbg_btn_code_last = 0;
     dbg_btn_code_prev = 0;
     dbg_btn_count = 0;
+    dbg_byte_overrun_count = 0;
 
     dmm_main_counter = 0;
     dmm_ann_counter = 0;
@@ -286,164 +296,167 @@ void Decoder34401_SckEdge(void)
 
     byte_len++;
     if (byte_len == 8u) {
-        if (byte_ready) {
-            byte_not_read = true;
+        uint8_t next_wr = (uint8_t)((fifo_wr + 1u) & BYTE_FIFO_MASK);
+
+        if (next_wr == fifo_rd) {
+            dbg_byte_overrun_count++;
         }
-        input_byte = input_acc;
-        output_byte = output_acc;
+        else {
+            byte_fifo[fifo_wr].in = input_acc;
+            byte_fifo[fifo_wr].out = output_acc;
+            fifo_wr = next_wr;
+        }
+
         byte_len = 0u;
-        byte_ready = true;
     }
 }
 
 void Decoder34401_Process(void)
 {
-    // Optional: detect overruns
-    if (byte_not_read) {
-        dbg_byte_overrun_count++;
-        byte_not_read = false;
-    }
-
     processShiftWindow();
 
-    if (!byte_ready) {
-        return;
-    }
+    while (fifo_rd != fifo_wr) {
+        uint8_t input_byte;
+        uint8_t output_byte;
 
-    // consume byte
-    input_buf[buf_len] = input_byte;
-    output_buf[buf_len] = output_byte;
-    byte_ready = false;
-    buf_len++;
+        input_byte = byte_fifo[fifo_rd].in;
+        output_byte = byte_fifo[fifo_rd].out;
+        fifo_rd = (uint8_t)((fifo_rd + 1u) & BYTE_FIFO_MASK);
 
-    switch (frame_state) {
+        // consume byte
+        input_buf[buf_len] = input_byte;
+        output_buf[buf_len] = output_byte;
+        buf_len++;
 
-    case FRAME_INIT:
-        if (lastBytesAreEof()) {
+        switch (frame_state) {
+
+        case FRAME_INIT:
+            if (lastBytesAreEof()) {
+                endFrame();
+            }
+            break;
+
+        case FRAME_UNKNOWN:
+            // BUTTON frame signature
+            if (buf_len == 1u && input_buf[0] == 0x00 && output_buf[0] == 0x77) {
+                frame_state = FRAME_BUTTON;
+                break;
+            }
+
+            if (buf_len == 2u) {
+                if (input_buf[0] == 0x00 && ((input_buf[1] & 0x7F) == 0x7F)) {
+                    frame_state = FRAME_MESSAGE;
+                    break;
+                }
+                else if (((input_buf[0] & 0x7F) == 0x7F) && input_buf[1] == 0x00) {
+                    frame_state = FRAME_ANNUNCIATORS;
+                    break;
+                }
+                else {
+                    frame_state = FRAME_CONTROL;
+                    break;
+                }
+            }
+            break;
+
+        case FRAME_MESSAGE:
+            if (lastBytesAreEof()) {
+                memcpy((void*)dmm_main, (const void*)msg_work, sizeof(dmm_main));
+                dmm_new_data_counter++;
+                dmm_main_counter++;
+                need_reset = true;
+
+                updateBarGraphFromMessageFrame();
+                endFrame();
+            }
+            else {
+                messageByte(input_buf[buf_len - 1u]);
+            }
+            break;
+
+        case FRAME_ANNUNCIATORS:
+            if (lastBytesAreEof()) {
+                dbg_ann_len = buf_len;
+
+                dbg_ann_b0 = (buf_len > 0u) ? input_buf[0] : 0u;
+                dbg_ann_b1 = (buf_len > 1u) ? input_buf[1] : 0u;
+                dbg_ann_b2 = (buf_len > 2u) ? input_buf[2] : 0u;
+                dbg_ann_b3 = (buf_len > 3u) ? input_buf[3] : 0u;
+                dbg_ann_b4 = (buf_len > 4u) ? input_buf[4] : 0u;
+                dbg_ann_b5 = (buf_len > 5u) ? input_buf[5] : 0u;
+                dbg_ann_b6 = (buf_len > 6u) ? input_buf[6] : 0u;
+                dbg_ann_b7 = (buf_len > 7u) ? input_buf[7] : 0u;
+
+                // same indices as original: input_buf[3], input_buf[2]
+                if (buf_len >= 4u) {
+                    publishAnnunciators(input_buf[3], input_buf[2]);
+                }
+                endFrame();
+            }
+            break;
+
+        case FRAME_CONTROL:
+            if (lastBytesAreEof()) {
+                // You can later decode blink/control if you want; we ignore for now.
+                endFrame();
+            }
+            break;
+
+        case FRAME_BUTTON:
+            if (input_buf[buf_len - 1u] == 0x66) {
+                dbg_btn_len = buf_len;
+
+                dbg_btn_o0 = (buf_len > 0u) ? output_buf[0] : 0u;
+                dbg_btn_o1 = (buf_len > 1u) ? output_buf[1] : 0u;
+                dbg_btn_o2 = (buf_len > 2u) ? output_buf[2] : 0u;
+                dbg_btn_o3 = (buf_len > 3u) ? output_buf[3] : 0u;
+                dbg_btn_o4 = (buf_len > 4u) ? output_buf[4] : 0u;
+                dbg_btn_o5 = (buf_len > 5u) ? output_buf[5] : 0u;
+
+                dbg_btn_i0 = (buf_len > 0u) ? input_buf[0] : 0u;
+                dbg_btn_i1 = (buf_len > 1u) ? input_buf[1] : 0u;
+                dbg_btn_i2 = (buf_len > 2u) ? input_buf[2] : 0u;
+                dbg_btn_i3 = (buf_len > 3u) ? input_buf[3] : 0u;
+                dbg_btn_i4 = (buf_len > 4u) ? input_buf[4] : 0u;
+                dbg_btn_i5 = (buf_len > 5u) ? input_buf[5] : 0u;
+
+                if (buf_len >= 3u) {
+                    uint32_t code =
+                        ((uint32_t)output_buf[0] << 16) |
+                        ((uint32_t)output_buf[1] << 8) |
+                        ((uint32_t)output_buf[2]);
+
+                    dbg_btn_code_prev = dbg_btn_code_last;
+                    dbg_btn_code_last = code;
+                    dbg_btn_count++;
+
+                    // SHIFT button code
+                    if (code == 7839183u) {
+                        uint32_t now_us = micros32();
+
+                        if (!shift_window_active) {
+                            shift_window_active = true;
+                            shift_window_start_us = now_us;
+                            shift_press_count = 1;
+                        }
+                        else {
+                            shift_press_count++;
+                            shift_window_start_us = now_us;   // extend window
+                        }
+                    }
+                }
+                endFrame();
+            }
+            break;
+
+        default:
             endFrame();
-        }
-        break;
-
-    case FRAME_UNKNOWN:
-        // BUTTON frame signature
-        if (buf_len == 1u && input_buf[0] == 0x00 && output_buf[0] == 0x77) {
-            frame_state = FRAME_BUTTON;
             break;
         }
 
-        if (buf_len == 2u) {
-            if (input_buf[0] == 0x00 && ((input_buf[1] & 0x7F) == 0x7F)) {
-                frame_state = FRAME_MESSAGE;
-                break;
-            }
-            else if (((input_buf[0] & 0x7F) == 0x7F) && input_buf[1] == 0x00) {
-                frame_state = FRAME_ANNUNCIATORS;
-                break;
-            }
-            else {
-                frame_state = FRAME_CONTROL;
-                break;
-            }
-        }
-        break;
-
-    case FRAME_MESSAGE:
-        if (lastBytesAreEof()) {
-            memcpy((void*)dmm_main, (const void*)msg_work, sizeof(dmm_main));
-            dmm_new_data_counter++;
-            dmm_main_counter++;
-            need_reset = true;
-
-            updateBarGraphFromMessageFrame();
+        // Avoid buffer overflow in bad sync conditions
+        if (buf_len >= sizeof(input_buf)) {
             endFrame();
         }
-        else {
-            messageByte(input_buf[buf_len - 1u]);
-        }
-        break;
-
-    case FRAME_ANNUNCIATORS:
-        if (lastBytesAreEof()) {
-            dbg_ann_len = buf_len;
-
-            dbg_ann_b0 = (buf_len > 0u) ? input_buf[0] : 0u;
-            dbg_ann_b1 = (buf_len > 1u) ? input_buf[1] : 0u;
-            dbg_ann_b2 = (buf_len > 2u) ? input_buf[2] : 0u;
-            dbg_ann_b3 = (buf_len > 3u) ? input_buf[3] : 0u;
-            dbg_ann_b4 = (buf_len > 4u) ? input_buf[4] : 0u;
-            dbg_ann_b5 = (buf_len > 5u) ? input_buf[5] : 0u;
-            dbg_ann_b6 = (buf_len > 6u) ? input_buf[6] : 0u;
-            dbg_ann_b7 = (buf_len > 7u) ? input_buf[7] : 0u;
-
-            // same indices as original: input_buf[3], input_buf[2]
-            if (buf_len >= 4u) {
-                publishAnnunciators(input_buf[3], input_buf[2]);
-            }
-            endFrame();
-        }
-        break;
-
-    case FRAME_CONTROL:
-        if (lastBytesAreEof()) {
-            // You can later decode blink/control if you want; we ignore for now.
-            endFrame();
-        }
-        break;
-
-    case FRAME_BUTTON:
-        if (input_buf[buf_len - 1u] == 0x66) {
-            dbg_btn_len = buf_len;
-
-            dbg_btn_o0 = (buf_len > 0u) ? output_buf[0] : 0u;
-            dbg_btn_o1 = (buf_len > 1u) ? output_buf[1] : 0u;
-            dbg_btn_o2 = (buf_len > 2u) ? output_buf[2] : 0u;
-            dbg_btn_o3 = (buf_len > 3u) ? output_buf[3] : 0u;
-            dbg_btn_o4 = (buf_len > 4u) ? output_buf[4] : 0u;
-            dbg_btn_o5 = (buf_len > 5u) ? output_buf[5] : 0u;
-
-            dbg_btn_i0 = (buf_len > 0u) ? input_buf[0] : 0u;
-            dbg_btn_i1 = (buf_len > 1u) ? input_buf[1] : 0u;
-            dbg_btn_i2 = (buf_len > 2u) ? input_buf[2] : 0u;
-            dbg_btn_i3 = (buf_len > 3u) ? input_buf[3] : 0u;
-            dbg_btn_i4 = (buf_len > 4u) ? input_buf[4] : 0u;
-            dbg_btn_i5 = (buf_len > 5u) ? input_buf[5] : 0u;
-
-            if (buf_len >= 3u) {
-                uint32_t code =
-                    ((uint32_t)output_buf[0] << 16) |
-                    ((uint32_t)output_buf[1] << 8) |
-                    ((uint32_t)output_buf[2]);
-
-                dbg_btn_code_prev = dbg_btn_code_last;
-                dbg_btn_code_last = code;
-                dbg_btn_count++;
-
-                // SHIFT button code
-                if (code == 7839183u) {
-                    uint32_t now_us = micros32();
-
-                    if (!shift_window_active) {
-                        shift_window_active = true;
-                        shift_window_start_us = now_us;
-                        shift_press_count = 1;
-                    }
-                    else {
-                        shift_press_count++;
-                        shift_window_start_us = now_us;   // extend window
-                    }
-                }
-            }
-            endFrame();
-        }
-        break;
-
-    default:
-        endFrame();
-        break;
-    }
-
-    // Avoid buffer overflow in bad sync conditions
-    if (buf_len >= sizeof(input_buf)) {
-        endFrame();
     }
 }
