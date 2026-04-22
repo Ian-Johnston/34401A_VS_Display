@@ -22,7 +22,7 @@
   * BluePill PB13 = SCK (EXTI rising edge)
   *          PB14 = FP DATA IN
   *          PB15 = FP DATA OUT
-  *          PB12 = INT (optional)
+  *          PB12 = INT (not used)
   *
  */
 
