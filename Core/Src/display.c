@@ -108,6 +108,8 @@ void DisplayMain(void)
 
 	FixUnitText(text);			// Fix units
 
+	FixMainText(text);			// Replace misc text
+
 	WaitForTextReady();			// Wait for comms with LT7680A-R to complete before sending mext batch
 
 	DrawText(text);				// Send to LT7680A-R
@@ -179,8 +181,7 @@ void FixUnitText(char* text1)
 		const char from[5];   // 4 chars + '\0'
 		const char to[5];     // 4 chars + '\0'
 	} rules[] = {
-		{ "MSEC", "  ms" },
-		{ " SEC", "   s" },
+		{ "MSEC", "mSEC" },
 		{ "  HZ", "  Hz" },
 		{ " KHZ", " kHz" },
 		{ " MHZ", " MHz" },
@@ -208,6 +209,51 @@ void FixUnitText(char* text1)
 				text1[i + 2] = rules[r].to[2];
 				text1[i + 3] = rules[r].to[3];
 				return; // only one unit expected
+			}
+		}
+	}
+}
+
+
+// Replace text without moving the following text
+// Replacement can only expand into existing spaces before the next text block
+void FixMainText(char* text1)
+{
+	static const struct {
+		const char* from;
+		const char* to;
+	} rules[] = {
+		{ "O.VLD", "OVERLOAD" }
+	};
+
+	const int rowLen = 14;
+
+	for (int i = 0; i < rowLen; i++) {
+		for (int r = 0; r < (int)(sizeof(rules) / sizeof(rules[0])); r++) {
+
+			int fromLen = (int)strlen(rules[r].from);
+			int toLen = (int)strlen(rules[r].to);
+
+			if (i + fromLen <= rowLen &&
+				strncmp(&text1[i], rules[r].from, fromLen) == 0) {
+
+				// find next non-space after the matched text
+				int limit = i + fromLen;
+				while (limit < rowLen && text1[limit] == ' ')
+					limit++;
+
+				// available space for replacement = up to start of next text block
+				int avail = limit - i;
+
+				// write replacement, but do not overwrite following text
+				for (int j = 0; j < avail; j++) {
+					if (j < toLen)
+						text1[i + j] = rules[r].to[j];
+					else
+						text1[i + j] = ' ';
+				}
+
+				return;
 			}
 		}
 	}

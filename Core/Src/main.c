@@ -176,6 +176,7 @@ int main(void) {
     {
         Decoder34401_Process();
 
+        // Phased writes between the DisplayMain and the Annunciators. 100Hz overall thus 50Hz refresh rate for each.
         if (dmm_new_data_counter != pending)
             pending = dmm_new_data_counter;
 
@@ -184,13 +185,14 @@ int main(void) {
             uint32_t now = HAL_GetTick();
 
             // Display timing (fast)
-            if ((now - last_display_ms) >= 10)
+            if ((now - last_display_ms) >= 10)      // 10 sets 50Hz for each, any faster we get display corruption
             {
                 last_display_ms = now;
 
                 if (display_phase == 0)
                 {
                     DisplayMain();
+                    //HAL_GPIO_TogglePin(GPIOC, TEST_OUT_Pin);      // used for TFT refresh rate measuring
                     display_phase = 1;
                 }
                 else
@@ -205,7 +207,7 @@ int main(void) {
             if ((now - last_led_ms) >= 200)
             {
                 last_led_ms = now;
-                HAL_GPIO_TogglePin(GPIOC, TEST_OUT_Pin);
+                HAL_GPIO_TogglePin(GPIOC, TEST_OUT_Pin);            // slow visual indication that TFT is being driven
             }
         }
     }
