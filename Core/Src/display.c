@@ -216,13 +216,14 @@ void FixUnitText(char* text1)
 
 
 // Replace text without moving the following text
-// Replacement can only expand into existing spaces before the next text block
+// Replacement can only expand into existing spaces where there is room
 void FixMainText(char* text1)
 {
 	static const struct {
 		const char* from;
 		const char* to;
 	} rules[] = {
+		{ "OVL.D", "OVERLOAD" },
 		{ "O.VLD", "OVERLOAD" }
 	};
 
@@ -265,7 +266,7 @@ void DisplayAnnunciators(void)
 	const char* AnnuncNames[15] = {
 		"SMP", "ADRS", "RMT", "MAN", "TRIG",
 		"HOLD", "MEM", "RATIO", "MATH", "ERROR",
-		"REAR", "SHIFT", "DIODE", "CONT", "4W"
+		"REAR", "SHIFT", "DIODE", "CONT", "4Wire"
 	};
 
 	int AnnuncYCoords[15] = {
@@ -282,9 +283,9 @@ void DisplayAnnunciators(void)
 		780,  // REAR
 		860,  // SHIFT
 
-		700,  // DIODE
-		810,  // CONT
-		900   // 4W
+		660,  // DIODE
+		770,  // CONT
+		860   // 4Wire
 	};
 
 	for (int i = 0; i < 15; i++)
@@ -294,7 +295,7 @@ void DisplayAnnunciators(void)
 		{
 			if (i == 9)   // ERROR
 				SetTextColors(AnnunColourForeRed, 0x000000);
-			else if (i >= 12)   // DIODE, CONT, 4W
+			else if (i >= 12)   // DIODE, CONT, 4Wire
 				SetTextColors(AnnunColourForeYel, 0x000000);
 			else
 				SetTextColors(AnnunColourFore, 0x000000);
@@ -306,9 +307,9 @@ void DisplayAnnunciators(void)
 
 		int xpos = Xpos_ANNUNC;
 
-		// Move DIODE, CONT, 4W left
+		// Move DIODE, CONT, 4Wire left
 		if (i >= 12)   // indices 12,13,14
-			xpos = Xpos_ANNUNC - 160;
+			xpos = Xpos_ANNUNC - 160;		// coord
 
 		ConfigureFontAndPosition(
 			0b00,    // Internal CGROM

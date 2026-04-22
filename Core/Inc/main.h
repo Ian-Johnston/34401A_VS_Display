@@ -47,8 +47,6 @@ extern "C" {
 #define FP_DOUT_Pin        GPIO_PIN_15		// FPD0 (pin 2 W601)
 #define FP_GPIO_Port       GPIOB
 #define FP_EXTI_IRQn       EXTI15_10_IRQn
-											// +5V (pick up on R510)
-											// 0V (pin 1 W601)
 
 
 //==================================================================================================
