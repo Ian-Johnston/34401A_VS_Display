@@ -4,7 +4,7 @@
   * @brief          : Main program body
   ******************************************************************************
   *
-  * By Ian Johnston (IanSJohnston on YouTube),
+  * By Ian Johnston (IanScottJohnston on YouTube),
   * for 3.71" 960x240 TFT LCD (ST7701S) and using LT7680 controller adaptor
   * Visual Studio 2022 with VisualGDB plugin:
   * To upload HEX from VS2022 = BUILD then PROGRAM AND START WITHOUT DEBUGGING
