@@ -45,9 +45,9 @@ volatile uint8_t SystemCheckTempValue = 0;
 
 void HardwareReset(void) {
     HAL_GPIO_WritePin(RESET_PORT, RESET_PIN, GPIO_PIN_RESET); // Pull reset low
-    HAL_Delay(100); // Delay 100 ms
+    HAL_Delay(20); // Delay 20 ms
     HAL_GPIO_WritePin(RESET_PORT, RESET_PIN, GPIO_PIN_SET);   // Release reset
-    HAL_Delay(100); // Delay 100 ms
+    HAL_Delay(20); // Delay 20 ms
 }
 
 
@@ -117,12 +117,12 @@ void SendAllToLT7680_LT() {
     Software_Reset_LT();
     HAL_Delay(10);
     LT7680_PLL_Initial_LT();                  // Initialize PLL first for stable clocks
-    HAL_Delay(100);
+    HAL_Delay(10);
     SDRAM_Init_LT();                          // Initialize SDRAM after the reset
     HAL_Delay(5);
 
     Set_LCD_Panel_LT();                       // Set up the panel interface
-    HAL_Delay(100);
+    HAL_Delay(10);
 
     WriteRegister(0x84);                      // Set backlighting Prescaler to zero which effectively turns off backlighting
     WriteData(0x00); // Prescaler = 00
@@ -170,6 +170,7 @@ void SendAllToLT7680_LT() {
 
     Text_Mode();
     ClearScreen();                          // Draws black 'spaces' across the whole screen - fast
+    HAL_Delay(5);
 
 
 }

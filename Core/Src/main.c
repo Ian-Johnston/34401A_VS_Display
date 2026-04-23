@@ -140,26 +140,14 @@ int main(void) {
     HAL_GPIO_WritePin(RESET_PORT, RESET_PIN, GPIO_PIN_SET);   // Release reset high
 
     HardwareReset();                // Reset LT7680 - Pull LCM_RESET low for 100ms and wait
-
-    HAL_Delay(50);
-
     BuyDisplay_Init();              // Initialize ST7701S BuyDisplay 3.71" driver IC
-
-    HAL_Delay(50);
-
     SendAllToLT7680_LT();           // run subs to setup LT7680 based on Levetop info
-
-    HAL_Delay(10);
-
     ConfigurePWMAndSetBrightness(BACKLIGHTFULL);  // Configure Timer-1 and PWM-1 for backlighting. Settable 0-100%
-
-    ClearScreen();                  // Again.....
-
-    RightWipe();
+    ClearScreen();                  // Clear the TFT
+    RightWipe();                    // Right wipe to clear random pixels down the far right hand side
 
     //TestDraw();
-
-    ClearScreen();                  // Again.....
+    //ClearScreen();                  // Again.....
 
     // For 34401A sniffing: clear any pending EXTI flag for PB13 SCK
     __HAL_GPIO_EXTI_CLEAR_IT(FP_SCK_Pin);
