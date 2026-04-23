@@ -1,3 +1,12 @@
+/**
+  ******************************************************************************
+  * @file    decoder_34401a.c
+  * Sniffing code gleaned from here, re-written and modified. See decoder.cpp
+  * https://github.com/openscopeproject/HP34401a-OLED-FW/
+  ******************************************************************************
+*/
+
+
 #include "decoder_34401a.h"
 #include "main.h"     // for FP_* pin defines
 #include <ctype.h>
