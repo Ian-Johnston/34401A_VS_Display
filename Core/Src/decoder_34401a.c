@@ -3,6 +3,8 @@
   * @file    decoder_34401a.c
   * Sniffing code gleaned from here, re-written and modified. See decoder.cpp
   * https://github.com/openscopeproject/HP34401a-OLED-FW/
+  * Original = Arduino C++
+  * My project = STM32 HAL embedded C
   ******************************************************************************
 */
 
