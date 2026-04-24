@@ -124,30 +124,25 @@ int main(void) {
 
     // Initialize all configured peripherals
     MX_GPIO_Init();
+
+    // Bit bang SPI - Pull CS high and SCLK low immediately after reset
+    HAL_GPIO_WritePin(LCD_CS_Port, LCD_CS_Pin, GPIO_PIN_SET);           // Pull CS high
+    HAL_GPIO_WritePin(LCD_SCK_Port, LCD_SCK_Pin, GPIO_PIN_RESET);       // CLK pin low
+
+    // Pull LT7680 RESET pin high immediately after reset
+    HAL_GPIO_WritePin(RESET_PORT, RESET_PIN, GPIO_PIN_SET);             // Release reset high
+
     MX_DMA_Init();
     MX_SPI1_Init();     // LT7680A-R
 
     Decoder34401_Init();
 
-    //MX_TIM3_Init();   // 3457A only (TIM3 input capture)
-    //HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_4);  // 3457A only (PB1 = TIM3_CH4)
-
-    // Pull CS high and SCLK low immediately after reset
-    HAL_GPIO_WritePin(LCD_CS_Port, LCD_CS_Pin, GPIO_PIN_SET);         // Pull CS high
-    HAL_GPIO_WritePin(LCD_SCK_Port, LCD_SCK_Pin, GPIO_PIN_RESET);     // CLK pin low
-
-    // Pull LT7680 RESET pin high immediately after reset
-    HAL_GPIO_WritePin(RESET_PORT, RESET_PIN, GPIO_PIN_SET);   // Release reset high
-
-    HardwareReset();                // Reset LT7680 - Pull LCM_RESET low for 100ms and wait
-    BuyDisplay_Init();              // Initialize ST7701S BuyDisplay 3.71" driver IC
-    SendAllToLT7680_LT();           // run subs to setup LT7680 based on Levetop info
-    ConfigurePWMAndSetBrightness(BACKLIGHTFULL);  // Configure Timer-1 and PWM-1 for backlighting. Settable 0-100%
-    ClearScreen();                  // Clear the TFT
-    RightWipe();                    // Right wipe to clear random pixels down the far right hand side
-
-    //TestDraw();
-    //ClearScreen();                  // Again.....
+    HardwareReset();                                // Reset LT7680 - Pull LCM_RESET low for 100ms and wait
+    BuyDisplay_Init();                              // Initialize ST7701S BuyDisplay 3.71" driver IC
+    SendAllToLT7680_LT();                           // run subs to setup LT7680 based on Levetop info
+    ConfigurePWMAndSetBrightness(BACKLIGHTFULL);    // Configure Timer-1 and PWM-1 for backlighting. Settable 0-100%
+    ClearScreen();                                  // Clear the TFT
+    RightWipe();                                    // Right wipe to clear random pixels down the far right hand side
 
     // For 34401A sniffing: clear any pending EXTI flag for PB13 SCK
     __HAL_GPIO_EXTI_CLEAR_IT(FP_SCK_Pin);
