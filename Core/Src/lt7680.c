@@ -1240,3 +1240,16 @@ void TestDraw() {
     DrawLine(0, 959, 239, 959, 0xFF, 0xFF, 0x00);	// far right
     DrawLine(19, 0, 119, 959, 0xFF, 0xFF, 0xFF);	// centred on TFT horizontally
 }
+
+
+void TestPixel() {
+    // Test only - A few pixel only
+    // startX, startY, endX, endY, colorRED, colorGREEN, colorBLUE
+    DrawLine(150, 268, 160, 268, 0xFF, 0xFF, 0xFF);
+    DrawLine(150, 269, 160, 269, 0xFF, 0xFF, 0xFF);
+    DrawLine(150, 270, 160, 270, 0xFF, 0xFF, 0xFF);
+    DrawLine(150, 271, 160, 271, 0xFF, 0xFF, 0xFF);
+    DrawLine(150, 272, 160, 272, 0xFF, 0xFF, 0xFF);
+    DrawLine(150, 273, 160, 273, 0xFF, 0xFF, 0xFF);
+    DrawLine(150, 274, 160, 274, 0xFF, 0xFF, 0xFF);
+}

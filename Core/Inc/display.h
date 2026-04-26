@@ -29,7 +29,6 @@ void DisplayAuxFirstHalf(void);
 void DisplayAuxSecondHalf(void);
 void DisplayAnnunciatorsHalf(void);
 
-
 // Display coords
 #define Xpos_MAIN				50			// These are actually the Y position because LCD is rotated 90deg in use. Values in pixels.
 #define Ypos_MAIN				0			// start at far left
@@ -37,5 +36,10 @@ void DisplayAnnunciatorsHalf(void);
 #define Xpos_SPLASH				326
 #define Ypos_SPLASH				160
 
+// Manual DP position
+#define DP_OFFSET 2
+#define MAIN_CHAR_ADVANCE 68
+#define DP_GAP 10
+static int last_dp_pos = -1;
 
 #endif // DISPLAY_H

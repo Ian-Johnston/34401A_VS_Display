@@ -147,6 +147,7 @@ int main(void) {
     // For 34401A sniffing: clear any pending EXTI flag for PB13 SCK
     __HAL_GPIO_EXTI_CLEAR_IT(FP_SCK_Pin);
 
+
     //**************************************************************************************************
     // Main loop initialize
 
@@ -168,7 +169,7 @@ int main(void) {
             uint32_t now = HAL_GetTick();
 
             // Display timing (fast)
-            if ((now - last_display_ms) >= 10)      // 10 sets 50Hz for each, any faster we get display corruption
+            if ((now - last_display_ms) >= 12)      // 10 sets 50Hz for each, 12 sets 41.7Hz, any faster we get display corruption
             {
                 last_display_ms = now;
 

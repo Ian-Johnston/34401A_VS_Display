@@ -51,13 +51,18 @@ void WaitForTextReady(void)
 void DisplayMain(void)
 {
 	char text[16];
+	char textBefore[16];
+	char textAfter[16];
+
 	uint16_t blink_mask = dmm_blink_mask;
 	static uint32_t last_blink_ms = 0;
 	static uint8_t blink_phase = 1;
 	uint32_t now = HAL_GetTick();
 
-	// check for non ASCII chars and make local copy
 	int i;
+	int dp_pos = -1;
+
+	// check for non ASCII chars and make local copy
 	for (i = 0; i < 15; i++)
 	{
 		unsigned char c = (unsigned char)dmm_main[i];
@@ -86,6 +91,14 @@ void DisplayMain(void)
 		}
 	}
 
+	ShiftUnitsRight1(text);		// Shift last 4 chars to the right by 1 char if match criteria
+
+	ShiftUnitsRight2(text);		// Shift last 4 chars to the right by 2 chars if match criteria
+
+	FixUnitText(text);			// Fix units
+
+	//FixMainText(text);			// Replace misc text - bug....shifts units to the right
+
 	SetTextColors(MainColourFore, BackgroundColour); // Foreground, Background
 	ConfigureFontAndPosition(
 		0b00,    // Internal CGROM
@@ -102,17 +115,81 @@ void DisplayMain(void)
 		Ypos_MAIN      // Cursor Y
 	);
 
-	ShiftUnitsRight1(text);		// Shift last 4 chars to the right by 1 char if match criteria
+	WaitForTextReady();			// Wait for comms with LT7680A-R to complete before sending next batch
 
-	ShiftUnitsRight2(text);		// Shift last 4 chars to the right by 2 chars if match criteria
+	// find decimal point
+	for (i = 0; text[i] != 0; i++)
+	{
+		if (text[i] == '.')
+		{
+			dp_pos = i;
+			break;
+		}
+	}
 
-	FixUnitText(text);			// Fix units
+	// detect if DP changed and if so erase artefact
+	if (dp_pos != last_dp_pos)
+	{
+		// erase artefact
+		int dp_x2 = 70;   // tune this once
+		int dp_y2 = Ypos_MAIN + (dp_pos * MAIN_CHAR_ADVANCE) + 2;   // tune -8 if needed
+		DrawLine(dp_x2, dp_y2 + 6, dp_x2 + 80, dp_y2 + 6, 0x00, 0x00, 0x00);
+		DrawLine(dp_x2, dp_y2 + 7, dp_x2 + 80, dp_y2 + 7, 0x00, 0x00, 0x00);
+		last_dp_pos = dp_pos;
+	}
 
-	FixMainText(text);			// Replace misc text
+	if (dp_pos >= 0)
+	{
+		// text before decimal point
+		memcpy(textBefore, text, dp_pos);
+		textBefore[dp_pos] = 0;
 
-	WaitForTextReady();			// Wait for comms with LT7680A-R to complete before sending mext batch
+		// text after decimal point
+		strcpy(textAfter, &text[dp_pos + 1]);
 
-	DrawText(text);				// Send to LT7680A-R
+		WaitForTextReady();
+		DrawText(textBefore);
+
+		// draw decimal point manually
+		{
+			int dp_x = 150;   // tune this once
+			int dp_y = Ypos_MAIN + (dp_pos * MAIN_CHAR_ADVANCE) - 0;   // tune -8 if needed
+
+			// DP
+			DrawLine(dp_x, dp_y + 0, dp_x + 10, dp_y + 0, 0xFF, 0xFF, 0xFF);
+			DrawLine(dp_x, dp_y + 1, dp_x + 10, dp_y + 1, 0xFF, 0xFF, 0xFF);
+			DrawLine(dp_x, dp_y + 2, dp_x + 10, dp_y + 2, 0xFF, 0xFF, 0xFF);
+			DrawLine(dp_x, dp_y + 3, dp_x + 10, dp_y + 3, 0xFF, 0xFF, 0xFF);
+			DrawLine(dp_x, dp_y + 4, dp_x + 10, dp_y + 4, 0xFF, 0xFF, 0xFF);
+			DrawLine(dp_x, dp_y + 5, dp_x + 10, dp_y + 5, 0xFF, 0xFF, 0xFF);
+			DrawLine(dp_x, dp_y + 6, dp_x + 10, dp_y + 6, 0xFF, 0xFF, 0xFF);
+		}
+
+		// reposition cursor for text after decimal point
+		ConfigureFontAndPosition(
+			0b00,    // Internal CGROM
+			0b10,    // Font size
+			0b00,    // ISO 8859-1
+			0,       // Full alignment enabled
+			0,       // Chroma keying disabled
+			1,       // Rotate 90 degrees counterclockwise
+			0b11,    // Width multiplier
+			0b11,    // Height multiplier
+			1,       // Line spacing
+			4,       // Character spacing
+			Xpos_MAIN,     // Cursor X
+			Ypos_MAIN + (dp_pos * MAIN_CHAR_ADVANCE) + DP_GAP
+		);
+
+		WaitForTextReady();
+		DrawText(textAfter);
+
+	} else {
+
+		WaitForTextReady();
+		DrawText(text);				// Send to LT7680A-R
+
+	}
 }
 
 
@@ -161,12 +238,18 @@ void ShiftUnitsRight2(char* text1)
 			text1[11] == p[2] &&
 			text1[12] == p[3]) {
 
-			text1[14] = '\0';      // remove trailing space
+			text1[14] = '\0';      // trim buffer end
 			text1[13] = text1[11];
 			text1[12] = text1[10];
 			text1[11] = text1[9];
 			text1[10] = ' ';
 			text1[9] = ' ';
+
+			// remove trailing space at end of string
+			//int len = strlen(text1);
+			//if (len > 0 && text1[len - 1] == ' ')
+			//	text1[len - 1] = '\0';
+
 			return;
 		}
 	}
@@ -309,7 +392,7 @@ void DisplayAnnunciators(void)
 
 		// Move DIODE, CONT, 4Wire left
 		if (i >= 12)   // indices 12,13,14
-			xpos = Xpos_ANNUNC - 160;		// coord
+			xpos = Xpos_ANNUNC - 162;		// coord
 
 		ConfigureFontAndPosition(
 			0b00,    // Internal CGROM
