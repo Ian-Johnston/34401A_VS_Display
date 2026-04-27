@@ -51,8 +51,10 @@ void WaitForTextReady(void)
 void DisplayMain(void)
 {
 	char text[16];
-	char textBefore[16];
-	char textAfter[16];
+	char textBeforeDP[16];
+	char textBetween[16];
+	char textAfterComma[16];
+	char textAfterDP[16];
 
 	uint16_t blink_mask = dmm_blink_mask;
 	static uint32_t last_blink_ms = 0;
@@ -61,6 +63,8 @@ void DisplayMain(void)
 
 	int i;
 	int dp_pos = -1;
+	int comma_pos = -1;
+	int unit_pos = 9;
 
 	// check for non ASCII chars and make local copy
 	for (i = 0; i < 15; i++)
@@ -91,15 +95,24 @@ void DisplayMain(void)
 		}
 	}
 
-	ShiftUnitsRight1(text);		// Shift last 4 chars to the right by 1 char if match criteria
+	// find comma before shifting units
+	for (i = 0; text[i] != 0; i++)
+	{
+		if (text[i] == ',')
+		{
+			comma_pos = i;
+			break;
+		}
+	}
 
-	ShiftUnitsRight2(text);		// Shift last 4 chars to the right by 2 chars if match criteria
+	if (comma_pos >= 0)
+		unit_pos = 10;     // comma adds one character before the units
 
-	FixUnitText(text);			// Fix units
+	ShiftUnitsRight1At(text, unit_pos);		// Shift last 4 chars to the right by 1 char if match criteria
+	ShiftUnitsRight2At(text, unit_pos);		// Shift last 4 chars to the right by 2 chars if match criteria
+	FixUnitText(text);						// Fix units
 
-	//FixMainText(text);			// Replace misc text - bug....shifts units to the right
-
-	SetTextColors(MainColourFore, BackgroundColour); // Foreground, Background
+	SetTextColors(MainColourFore, BackgroundColour);
 	ConfigureFontAndPosition(
 		0b00,    // Internal CGROM
 		0b10,    // Font size
@@ -111,51 +124,68 @@ void DisplayMain(void)
 		0b11,    // Height multiplier
 		1,       // Line spacing
 		4,       // Character spacing
-		Xpos_MAIN,     // Cursor X
-		Ypos_MAIN      // Cursor Y
+		Xpos_MAIN,
+		Ypos_MAIN
 	);
 
-	WaitForTextReady();			// Wait for comms with LT7680A-R to complete before sending next batch
+	// find decimal point and comma after unit shifting
+	dp_pos = -1;
+	comma_pos = -1;
 
-	// find decimal point
+	// find decimal point and comma
 	for (i = 0; text[i] != 0; i++)
 	{
 		if (text[i] == '.')
-		{
 			dp_pos = i;
-			break;
-		}
+
+		if (text[i] == ',')
+			comma_pos = i;
 	}
 
 	// detect if DP changed and if so erase artefact
 	if (dp_pos != last_dp_pos)
 	{
-		// erase artefact
-		int dp_x2 = 70;   // tune this once
-		int dp_y2 = Ypos_MAIN + (dp_pos * MAIN_CHAR_ADVANCE) + 2;   // tune -8 if needed
+		int dp_x2 = 70;
+		int dp_y2 = Ypos_MAIN + (dp_pos * MAIN_CHAR_ADVANCE) + 2;
 		DrawLine(dp_x2, dp_y2 + 6, dp_x2 + 80, dp_y2 + 6, 0x00, 0x00, 0x00);
 		DrawLine(dp_x2, dp_y2 + 7, dp_x2 + 80, dp_y2 + 7, 0x00, 0x00, 0x00);
 		last_dp_pos = dp_pos;
 	}
 
-	if (dp_pos >= 0)
+	// detect if comma changed and if so erase artefact
+	if (comma_pos != last_comma_pos)
+	{
+		int comma_x2 = 70;
+		int comma_y2 = Ypos_MAIN + ((comma_pos - 1) * MAIN_CHAR_ADVANCE) + COMMA_DOT_OFFSET;
+
+		DrawLine(comma_x2, comma_y2 + 7, comma_x2 + 80, comma_y2 + 7, 0x00, 0x00, 0x00);
+		DrawLine(comma_x2, comma_y2 + 8, comma_x2 + 80, comma_y2 + 8, 0x00, 0x00, 0x00);
+		DrawLine(comma_x2, comma_y2 + 9, comma_x2 + 80, comma_y2 + 9, 0x00, 0x00, 0x00);
+		last_comma_pos = comma_pos;
+	}
+
+	// Case: decimal point and comma present
+	if (dp_pos >= 0 && comma_pos > dp_pos)
 	{
 		// text before decimal point
-		memcpy(textBefore, text, dp_pos);
-		textBefore[dp_pos] = 0;
+		memcpy(textBeforeDP, text, dp_pos);
+		textBeforeDP[dp_pos] = 0;
 
-		// text after decimal point
-		strcpy(textAfter, &text[dp_pos + 1]);
+		// text between decimal point and comma
+		memcpy(textBetween, &text[dp_pos + 1], comma_pos - dp_pos - 1);
+		textBetween[comma_pos - dp_pos - 1] = 0;
+
+		// text after comma
+		strcpy(textAfterComma, &text[comma_pos + 1]);
 
 		WaitForTextReady();
-		DrawText(textBefore);
+		DrawText(textBeforeDP);
 
 		// draw decimal point manually
 		{
-			int dp_x = 150;   // tune this once
-			int dp_y = Ypos_MAIN + (dp_pos * MAIN_CHAR_ADVANCE) - 0;   // tune -8 if needed
+			int dp_x = 143;
+			int dp_y = Ypos_MAIN + (dp_pos * MAIN_CHAR_ADVANCE);
 
-			// DP
 			DrawLine(dp_x, dp_y + 0, dp_x + 10, dp_y + 0, 0xFF, 0xFF, 0xFF);
 			DrawLine(dp_x, dp_y + 1, dp_x + 10, dp_y + 1, 0xFF, 0xFF, 0xFF);
 			DrawLine(dp_x, dp_y + 2, dp_x + 10, dp_y + 2, 0xFF, 0xFF, 0xFF);
@@ -165,7 +195,7 @@ void DisplayMain(void)
 			DrawLine(dp_x, dp_y + 6, dp_x + 10, dp_y + 6, 0xFF, 0xFF, 0xFF);
 		}
 
-		// reposition cursor for text after decimal point
+		// text after decimal point, before comma
 		ConfigureFontAndPosition(
 			0b00,    // Internal CGROM
 			0b10,    // Font size
@@ -177,44 +207,125 @@ void DisplayMain(void)
 			0b11,    // Height multiplier
 			1,       // Line spacing
 			4,       // Character spacing
-			Xpos_MAIN,     // Cursor X
+			Xpos_MAIN,
 			Ypos_MAIN + (dp_pos * MAIN_CHAR_ADVANCE) + DP_GAP
 		);
 
 		WaitForTextReady();
-		DrawText(textAfter);
+		DrawText(textBetween);
 
-	} else {
+		// draw comma manually
+		{
+			int comma_x = 150;
+			int comma_y = Ypos_MAIN + ((comma_pos - 1) * MAIN_CHAR_ADVANCE) + COMMA_DOT_OFFSET;
+
+			DrawLine(comma_x, comma_y + 0, comma_x + 14, comma_y + 0, 0xFF, 0xFF, 0xFF);
+			DrawLine(comma_x, comma_y + 1, comma_x + 14, comma_y + 1, 0xFF, 0xFF, 0xFF);
+			DrawLine(comma_x, comma_y + 2, comma_x + 14, comma_y + 2, 0xFF, 0xFF, 0xFF);
+			DrawLine(comma_x, comma_y + 3, comma_x + 10, comma_y + 3, 0xFF, 0xFF, 0xFF);
+			DrawLine(comma_x, comma_y + 4, comma_x + 10, comma_y + 4, 0xFF, 0xFF, 0xFF);
+			DrawLine(comma_x, comma_y + 5, comma_x + 10, comma_y + 5, 0xFF, 0xFF, 0xFF);
+			DrawLine(comma_x, comma_y + 6, comma_x + 10, comma_y + 6, 0xFF, 0xFF, 0xFF);
+			DrawLine(comma_x, comma_y + 7, comma_x + 10, comma_y + 7, 0xFF, 0xFF, 0xFF);
+		}
+
+		// text after comma
+		ConfigureFontAndPosition(
+			0b00,    // Internal CGROM
+			0b10,    // Font size
+			0b00,    // ISO 8859-1
+			0,       // Full alignment enabled
+			0,       // Chroma keying disabled
+			1,       // Rotate 90 degrees counterclockwise
+			0b11,    // Width multiplier
+			0b11,    // Height multiplier
+			1,       // Line spacing
+			4,       // Character spacing
+			Xpos_MAIN,
+			Ypos_MAIN + ((comma_pos - 1) * MAIN_CHAR_ADVANCE) + COMMA_GAP
+		);
 
 		WaitForTextReady();
-		DrawText(text);				// Send to LT7680A-R
+		DrawText(textAfterComma);
+	}
 
+	// Case: decimal point only
+	else if (dp_pos >= 0)
+
+	{
+		memcpy(textBeforeDP, text, dp_pos);
+		textBeforeDP[dp_pos] = 0;
+
+		strcpy(textAfterDP, &text[dp_pos + 1]);
+
+		WaitForTextReady();
+		DrawText(textBeforeDP);
+
+		// draw decimal point manually
+		{
+			int dp_x = 143;
+			int dp_y = Ypos_MAIN + (dp_pos * MAIN_CHAR_ADVANCE);
+
+			DrawLine(dp_x, dp_y + 0, dp_x + 10, dp_y + 0, 0xFF, 0xFF, 0xFF);
+			DrawLine(dp_x, dp_y + 1, dp_x + 10, dp_y + 1, 0xFF, 0xFF, 0xFF);
+			DrawLine(dp_x, dp_y + 2, dp_x + 10, dp_y + 2, 0xFF, 0xFF, 0xFF);
+			DrawLine(dp_x, dp_y + 3, dp_x + 10, dp_y + 3, 0xFF, 0xFF, 0xFF);
+			DrawLine(dp_x, dp_y + 4, dp_x + 10, dp_y + 4, 0xFF, 0xFF, 0xFF);
+			DrawLine(dp_x, dp_y + 5, dp_x + 10, dp_y + 5, 0xFF, 0xFF, 0xFF);
+			DrawLine(dp_x, dp_y + 6, dp_x + 10, dp_y + 6, 0xFF, 0xFF, 0xFF);
+		}
+
+		ConfigureFontAndPosition(
+			0b00,    // Internal CGROM
+			0b10,    // Font size
+			0b00,    // ISO 8859-1
+			0,       // Full alignment enabled
+			0,       // Chroma keying disabled
+			1,       // Rotate 90 degrees counterclockwise
+			0b11,    // Width multiplier
+			0b11,    // Height multiplier
+			1,       // Line spacing
+			4,       // Character spacing
+			Xpos_MAIN,
+			Ypos_MAIN + (dp_pos * MAIN_CHAR_ADVANCE) + DP_GAP
+		);
+
+		WaitForTextReady();
+		DrawText(textAfterDP);
+	}
+
+	// Case: no decimal point
+	else
+
+	{
+		WaitForTextReady();
+		DrawText(text);
 	}
 }
 
 
 // Shift chars right by 1
 // Enter the original four chars to be shifted
-void ShiftUnitsRight1(char* text1)
+void ShiftUnitsRight1At(char* text1, int pos)
 {
 	static const char* unit4[] = {
 		" VDC", "mVDC", " OHM", "KOHM", "MOHM", " ADC", "mADC", " AAC", "mAAC", "uSEC", "mSEC", " SEC", "mMIN", "mMAX", "mVAC", " VAC", " dBm",
 		"END1"
 	};
 
-	for (int u = 0; u < (int)(sizeof(unit4) / sizeof(unit4[0])); u++) {
+	for (int u = 0; strcmp(unit4[u], "END1") != 0; u++) {
 		const char* p = unit4[u];
 
-		if (text1[9] == p[0] &&
-			text1[10] == p[1] &&
-			text1[11] == p[2] &&
-			text1[12] == p[3]) {
+		if (text1[pos] == p[0] &&
+			text1[pos + 1] == p[1] &&
+			text1[pos + 2] == p[2] &&
+			text1[pos + 3] == p[3]) {
 
-			text1[13] = text1[12];
-			text1[12] = text1[11];
-			text1[11] = text1[10];
-			text1[10] = text1[9];
-			text1[9] = ' ';
+			text1[pos + 4] = text1[pos + 3];
+			text1[pos + 3] = text1[pos + 2];
+			text1[pos + 2] = text1[pos + 1];
+			text1[pos + 1] = text1[pos];
+			text1[pos] = ' ';
 			return;
 		}
 	}
@@ -223,33 +334,27 @@ void ShiftUnitsRight1(char* text1)
 
 // Shift chars right by 2
 // Enter the original four chars to be shifted
-void ShiftUnitsRight2(char* text1)
+void ShiftUnitsRight2At(char* text1, int pos)
 {
 	static const char* unit4[] = {
 		" HZ ", "KHZ ", " dB ",
 		"END2"
 	};
 
-	for (int u = 0; u < (int)(sizeof(unit4) / sizeof(unit4[0])); u++) {
+	for (int u = 0; strcmp(unit4[u], "END2") != 0; u++) {
 		const char* p = unit4[u];
 
-		if (text1[9] == p[0] &&
-			text1[10] == p[1] &&
-			text1[11] == p[2] &&
-			text1[12] == p[3]) {
+		if (text1[pos] == p[0] &&
+			text1[pos + 1] == p[1] &&
+			text1[pos + 2] == p[2] &&
+			text1[pos + 3] == p[3]) {
 
-			text1[14] = '\0';      // trim buffer end
-			text1[13] = text1[11];
-			text1[12] = text1[10];
-			text1[11] = text1[9];
-			text1[10] = ' ';
-			text1[9] = ' ';
-
-			// remove trailing space at end of string
-			//int len = strlen(text1);
-			//if (len > 0 && text1[len - 1] == ' ')
-			//	text1[len - 1] = '\0';
-
+			text1[pos + 5] = '\0';
+			text1[pos + 4] = text1[pos + 2];
+			text1[pos + 3] = text1[pos + 1];
+			text1[pos + 2] = text1[pos];
+			text1[pos + 1] = ' ';
+			text1[pos] = ' ';
 			return;
 		}
 	}

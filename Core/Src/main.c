@@ -169,7 +169,7 @@ int main(void) {
             uint32_t now = HAL_GetTick();
 
             // Display timing (fast)
-            if ((now - last_display_ms) >= 12)      // 10 sets 50Hz for each, 12 sets 41.7Hz, any faster than 12 we get display corruption (i.e. Freq mode on 34401A)
+            if ((now - last_display_ms) >= 14)      // 10 sets 50Hz for each, 12 sets 41.7Hz, 14 sets 35.7Hz.......any faster than 14 we get display corruption (i.e. Freq mode on 34401A)
             {
                 last_display_ms = now;
 

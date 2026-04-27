@@ -37,9 +37,14 @@ void DisplayAnnunciatorsHalf(void);
 #define Ypos_SPLASH				160
 
 // Manual DP position
-#define DP_OFFSET 2
 #define MAIN_CHAR_ADVANCE 68
+#define DP_OFFSET 2
 #define DP_GAP 10
 static int last_dp_pos = -1;
+
+// Manual comma position
+#define COMMA_DOT_OFFSET 10
+#define COMMA_GAP 20
+static int last_comma_pos = -1;
 
 #endif // DISPLAY_H
