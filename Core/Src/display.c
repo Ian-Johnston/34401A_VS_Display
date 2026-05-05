@@ -161,6 +161,9 @@ void DisplayMain(void)
 		DrawLine(comma_x2, comma_y2 + 7, comma_x2 + 80, comma_y2 + 7, 0x00, 0x00, 0x00);
 		DrawLine(comma_x2, comma_y2 + 8, comma_x2 + 80, comma_y2 + 8, 0x00, 0x00, 0x00);
 		DrawLine(comma_x2, comma_y2 + 9, comma_x2 + 80, comma_y2 + 9, 0x00, 0x00, 0x00);
+		
+		DrawLine(comma_x2, comma_y2 + 10, comma_x2 + 80, comma_y2 + 10, 0x00, 0x00, 0x00);
+		DrawLine(comma_x2, comma_y2 + 11, comma_x2 + 80, comma_y2 + 11, 0x00, 0x00, 0x00);
 		last_comma_pos = comma_pos;
 	}
 
@@ -193,6 +196,9 @@ void DisplayMain(void)
 			DrawLine(dp_x, dp_y + 4, dp_x + 10, dp_y + 4, 0xFF, 0xFF, 0xFF);
 			DrawLine(dp_x, dp_y + 5, dp_x + 10, dp_y + 5, 0xFF, 0xFF, 0xFF);
 			DrawLine(dp_x, dp_y + 6, dp_x + 10, dp_y + 6, 0xFF, 0xFF, 0xFF);
+
+			DrawLine(dp_x, dp_y + 7, dp_x + 10, dp_y + 7, 0xFF, 0xFF, 0xFF);
+			DrawLine(dp_x, dp_y + 8, dp_x + 10, dp_y + 8, 0xFF, 0xFF, 0xFF);
 		}
 
 		// text after decimal point, before comma
@@ -216,17 +222,22 @@ void DisplayMain(void)
 
 		// draw comma manually
 		{
-			int comma_x = 150;
+			int comma_x = 143;
 			int comma_y = Ypos_MAIN + ((comma_pos - 1) * MAIN_CHAR_ADVANCE) + COMMA_DOT_OFFSET;
 
-			DrawLine(comma_x, comma_y + 0, comma_x + 14, comma_y + 0, 0xFF, 0xFF, 0xFF);
-			DrawLine(comma_x, comma_y + 1, comma_x + 14, comma_y + 1, 0xFF, 0xFF, 0xFF);
-			DrawLine(comma_x, comma_y + 2, comma_x + 14, comma_y + 2, 0xFF, 0xFF, 0xFF);
-			DrawLine(comma_x, comma_y + 3, comma_x + 10, comma_y + 3, 0xFF, 0xFF, 0xFF);
+			DrawLine(comma_x, comma_y + 0, comma_x + 15, comma_y + 0, 0xFF, 0xFF, 0xFF);
+			DrawLine(comma_x, comma_y + 1, comma_x + 15, comma_y + 1, 0xFF, 0xFF, 0xFF);
+			DrawLine(comma_x, comma_y + 2, comma_x + 15, comma_y + 2, 0xFF, 0xFF, 0xFF);
+
+			DrawLine(comma_x, comma_y + 3, comma_x + 15, comma_y + 3, 0xFF, 0xFF, 0xFF);
+
 			DrawLine(comma_x, comma_y + 4, comma_x + 10, comma_y + 4, 0xFF, 0xFF, 0xFF);
 			DrawLine(comma_x, comma_y + 5, comma_x + 10, comma_y + 5, 0xFF, 0xFF, 0xFF);
 			DrawLine(comma_x, comma_y + 6, comma_x + 10, comma_y + 6, 0xFF, 0xFF, 0xFF);
 			DrawLine(comma_x, comma_y + 7, comma_x + 10, comma_y + 7, 0xFF, 0xFF, 0xFF);
+			DrawLine(comma_x, comma_y + 8, comma_x + 10, comma_y + 8, 0xFF, 0xFF, 0xFF);
+
+			DrawLine(comma_x, comma_y + 9, comma_x + 10, comma_y + 9, 0xFF, 0xFF, 0xFF);
 		}
 
 		// text after comma
@@ -273,6 +284,9 @@ void DisplayMain(void)
 			DrawLine(dp_x, dp_y + 4, dp_x + 10, dp_y + 4, 0xFF, 0xFF, 0xFF);
 			DrawLine(dp_x, dp_y + 5, dp_x + 10, dp_y + 5, 0xFF, 0xFF, 0xFF);
 			DrawLine(dp_x, dp_y + 6, dp_x + 10, dp_y + 6, 0xFF, 0xFF, 0xFF);
+
+			DrawLine(dp_x, dp_y + 7, dp_x + 10, dp_y + 7, 0xFF, 0xFF, 0xFF);
+			DrawLine(dp_x, dp_y + 8, dp_x + 10, dp_y + 8, 0xFF, 0xFF, 0xFF);
 		}
 
 		ConfigureFontAndPosition(
@@ -497,7 +511,7 @@ void DisplayAnnunciators(void)
 
 		// Move DIODE, CONT, 4Wire left
 		if (i >= 12)   // indices 12,13,14
-			xpos = Xpos_ANNUNC - 162;		// coord
+			xpos = Xpos_ANNUNC - 172;		// coord
 
 		ConfigureFontAndPosition(
 			0b00,    // Internal CGROM
@@ -507,7 +521,7 @@ void DisplayAnnunciators(void)
 			0,       // Chroma keying disabled
 			1,       // Rotate 90 degrees counterclockwise
 			0b01,    // Width multiplier
-			0b01,    // Height multiplier
+			0b10,    // Height multiplier
 			5,       // Line spacing
 			0,       // Character spacing
 			xpos,     // Cursor X
