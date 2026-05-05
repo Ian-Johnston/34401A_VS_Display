@@ -147,8 +147,16 @@ void DisplayMain(void)
 	{
 		int dp_x2 = 70;
 		int dp_y2 = Ypos_MAIN + (dp_pos * MAIN_CHAR_ADVANCE) + 2;
-		DrawLine(dp_x2, dp_y2 + 6, dp_x2 + 80, dp_y2 + 6, 0x00, 0x00, 0x00);
-		DrawLine(dp_x2, dp_y2 + 7, dp_x2 + 80, dp_y2 + 7, 0x00, 0x00, 0x00);
+		
+		DrawLine(dp_x2, dp_y2 + 0, dp_x2 + 100, dp_y2 + 0, 0x00, 0x00, 0x00);
+		DrawLine(dp_x2, dp_y2 + 1, dp_x2 + 100, dp_y2 + 1, 0x00, 0x00, 0x00);
+		DrawLine(dp_x2, dp_y2 + 2, dp_x2 + 100, dp_y2 + 2, 0x00, 0x00, 0x00);
+		DrawLine(dp_x2, dp_y2 + 3, dp_x2 + 100, dp_y2 + 3, 0x00, 0x00, 0x00);
+		DrawLine(dp_x2, dp_y2 + 4, dp_x2 + 100, dp_y2 + 4, 0x00, 0x00, 0x00);
+		DrawLine(dp_x2, dp_y2 + 5, dp_x2 + 100, dp_y2 + 5, 0x00, 0x00, 0x00);
+		
+		DrawLine(dp_x2, dp_y2 + 6, dp_x2 + 100, dp_y2 + 6, 0x00, 0x00, 0x00);
+		DrawLine(dp_x2, dp_y2 + 7, dp_x2 + 100, dp_y2 + 7, 0x00, 0x00, 0x00);
 		last_dp_pos = dp_pos;
 	}
 
@@ -158,12 +166,20 @@ void DisplayMain(void)
 		int comma_x2 = 70;
 		int comma_y2 = Ypos_MAIN + ((comma_pos - 1) * MAIN_CHAR_ADVANCE) + COMMA_DOT_OFFSET;
 
-		DrawLine(comma_x2, comma_y2 + 7, comma_x2 + 80, comma_y2 + 7, 0x00, 0x00, 0x00);
-		DrawLine(comma_x2, comma_y2 + 8, comma_x2 + 80, comma_y2 + 8, 0x00, 0x00, 0x00);
-		DrawLine(comma_x2, comma_y2 + 9, comma_x2 + 80, comma_y2 + 9, 0x00, 0x00, 0x00);
+		DrawLine(comma_x2, comma_y2 + 0, comma_x2 + 100, comma_y2 + 0, 0x00, 0x00, 0x00);
+		DrawLine(comma_x2, comma_y2 + 1, comma_x2 + 100, comma_y2 + 1, 0x00, 0x00, 0x00);
+		DrawLine(comma_x2, comma_y2 + 2, comma_x2 + 100, comma_y2 + 2, 0x00, 0x00, 0x00);
+		DrawLine(comma_x2, comma_y2 + 3, comma_x2 + 100, comma_y2 + 3, 0x00, 0x00, 0x00);
+		DrawLine(comma_x2, comma_y2 + 4, comma_x2 + 100, comma_y2 + 4, 0x00, 0x00, 0x00);
+		DrawLine(comma_x2, comma_y2 + 5, comma_x2 + 100, comma_y2 + 5, 0x00, 0x00, 0x00);
+		DrawLine(comma_x2, comma_y2 + 6, comma_x2 + 100, comma_y2 + 6, 0x00, 0x00, 0x00);
+
+		DrawLine(comma_x2, comma_y2 + 7, comma_x2 + 100, comma_y2 + 7, 0x00, 0x00, 0x00);
+		DrawLine(comma_x2, comma_y2 + 8, comma_x2 + 100, comma_y2 + 8, 0x00, 0x00, 0x00);
+		DrawLine(comma_x2, comma_y2 + 9, comma_x2 + 100, comma_y2 + 9, 0x00, 0x00, 0x00);
 		
-		DrawLine(comma_x2, comma_y2 + 10, comma_x2 + 80, comma_y2 + 10, 0x00, 0x00, 0x00);
-		DrawLine(comma_x2, comma_y2 + 11, comma_x2 + 80, comma_y2 + 11, 0x00, 0x00, 0x00);
+		DrawLine(comma_x2, comma_y2 + 10, comma_x2 + 100, comma_y2 + 10, 0x00, 0x00, 0x00);
+		DrawLine(comma_x2, comma_y2 + 11, comma_x2 + 100, comma_y2 + 11, 0x00, 0x00, 0x00);
 		last_comma_pos = comma_pos;
 	}
 
@@ -468,11 +484,11 @@ void DisplayAnnunciators(void)
 	const char* AnnuncNames[15] = {
 		"SMP", "ADRS", "RMT", "MAN", "TRIG",
 		"HOLD", "MEM", "RATIO", "MATH", "ERROR",
-		"REAR", "SHIFT", "DIODE", "CONT", "4Wire"
+		"REAR", "SHIFT", "DIODE", "CONT ", "4Wire"
 	};
 
 	int AnnuncYCoords[15] = {
-		3,   // SMP
+		3,    // SMP
 		60,   // ADRS
 		140,  // RMT
 		210,  // MAN
@@ -493,14 +509,14 @@ void DisplayAnnunciators(void)
 	for (int i = 0; i < 15; i++)
 	{
 		//if (1)
-		if (dmm_ann_state & (1U << i))
+		if (dmm_ann_state & (uint16_t)(1U << i))
 		{
-			if (i == 9)   // ERROR
-				SetTextColors(AnnunColourForeRed, 0x000000);
-			else if (i >= 12)   // DIODE, CONT, 4Wire
-				SetTextColors(AnnunColourForeYel, 0x000000);
-			else
-				SetTextColors(AnnunColourFore, 0x000000);
+		//	if (i == 9)											// ERROR				bug here, red artefacts ppear to left of "CONT"
+		//		SetTextColors(AnnunColourForeRed, 0x000000);
+		//	else if (i >= 12)									// DIODE, CONT, 4Wire
+		//		SetTextColors(AnnunColourForeYel, 0x000000);
+		//	else
+			SetTextColors(AnnunColourFore, 0x000000);
 		}
 		else
 		{
@@ -511,7 +527,7 @@ void DisplayAnnunciators(void)
 
 		// Move DIODE, CONT, 4Wire left
 		if (i >= 12)   // indices 12,13,14
-			xpos = Xpos_ANNUNC - 172;		// coord
+			xpos = Xpos_ANNUNC - 178;		// coord height adjust
 
 		ConfigureFontAndPosition(
 			0b00,    // Internal CGROM
