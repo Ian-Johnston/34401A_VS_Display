@@ -143,7 +143,7 @@ void SetCanvasImageWidth_LT(void);
 
 // User
 #define DISP_TEST				0			// Display the LT7680 test card: 1 = test card, 0 = normal operation
-#define BACKLIGHTFULL			10			// Backlighting brightness 0-100%
+#define BACKLIGHTFULL			20			// Backlighting brightness 0-100%
 #define BACKLIGHTOFF			0			// Backlighting brightness 0-100%
 
 #endif
