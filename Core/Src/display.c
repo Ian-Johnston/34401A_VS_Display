@@ -484,7 +484,7 @@ void DisplayAnnunciators(void)
 	const char* AnnuncNames[15] = {
 		"SMP", "ADRS", "RMT", "MAN", "TRIG",
 		"HOLD", "MEM", "RATIO", "MATH", "ERROR",
-		"REAR", "SHIFT", "DIODE", "CONT ", "4Wire"
+		"REAR", "SHIFT", "DIODE", "CONT", "4Wire"
 	};
 
 	int AnnuncYCoords[15] = {
