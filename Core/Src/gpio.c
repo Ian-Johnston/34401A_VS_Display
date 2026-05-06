@@ -41,9 +41,9 @@ void MX_GPIO_Init(void)
     // 34401A front panel sniff pins
     //==============================================================================================
 
-    // PB13 SCK interrupt (rising edge)
+    // PB13 SCK interrupt (falling edge)
     GPIO_InitStruct.Pin = FP_SCK_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;        // was RISING prior to trying to fix CONT mode SHIFT issue
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(FP_GPIO_Port, &GPIO_InitStruct);
 

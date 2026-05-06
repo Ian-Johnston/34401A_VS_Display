@@ -42,6 +42,9 @@ volatile uint32_t dbg_last_any_us;
 volatile uint32_t dbg_fifo_level_max;
 volatile uint32_t dbg_fifo_level;
 
+static uint32_t cont_settle_start_us = 0;
+static bool cont_settle_active = false;
+
 // ===== Internal sniff state =====
 static volatile uint8_t  byte_len;
 static volatile uint8_t  input_acc, output_acc;
@@ -139,8 +142,8 @@ static void processShiftWindow(void)
     if (shift_window_active) {
         uint32_t now_us = micros32();
 
-        // 300 ms quiet window to collect single/double presses
-        if ((uint32_t)(now_us - shift_window_start_us) > 300000u) {
+        // 500 ms quiet window to collect single/double presses
+        if ((uint32_t)(now_us - shift_window_start_us) > 500000u) {
             if (shift_press_count & 1u) {
                 dmm_ann_state ^= 0x0800u;
                 dmm_new_data_counter++;
@@ -190,6 +193,14 @@ static void publishAnnunciators(uint8_t h, uint8_t l)
 
     // Preserve SHIFT bit (bit11) from local button tracking
     uint16_t new_state = (uint16_t)((state & 0xF7FFu) | (dmm_ann_state & 0x0800u));
+
+    uint16_t old_state = dmm_ann_state;
+
+    // CONT is bit 13
+    if ((new_state & 0x2000u) && !(old_state & 0x2000u)) {
+        cont_settle_start_us = micros32();
+        cont_settle_active = true;
+    }
 
     if (new_state != dmm_ann_state) {
         dmm_ann_state = new_state;
@@ -350,6 +361,12 @@ void Decoder34401_Process(void)
 {
     processShiftWindow();
 
+    if (cont_settle_active) {
+        if ((uint32_t)(micros32() - cont_settle_start_us) > 300000u) {
+            cont_settle_active = false;
+        }
+    }
+
     while (fifo_rd != fifo_wr) {
         uint8_t input_byte;
         uint8_t output_byte;
@@ -454,6 +471,32 @@ void Decoder34401_Process(void)
 
         case FRAME_BUTTON:
             if (input_buf[buf_len - 1u] == 0x66) {
+
+                if (cont_settle_active) {
+                    if (buf_len >= 3u) {
+                        uint32_t code =
+                            ((uint32_t)output_buf[0] << 16) |
+                            ((uint32_t)output_buf[1] << 8) |
+                            ((uint32_t)output_buf[2]);
+
+                        // During CONT settling, ignore SHIFT itself,
+                        // but allow any other real button to consume/clear SHIFT
+                        if (code != 7839183u) {
+                            shift_window_active = false;
+                            shift_press_count = 0;
+
+                            if (dmm_ann_state & 0x0800u) {
+                                dmm_ann_state &= (uint16_t)~0x0800u;
+                                dmm_new_data_counter++;
+                                dmm_ann_counter++;
+                            }
+                        }
+                    }
+
+                    endFrame();
+                    break;
+                }
+
                 if (buf_len >= 3u) {
                     uint32_t code =
                         ((uint32_t)output_buf[0] << 16) |
