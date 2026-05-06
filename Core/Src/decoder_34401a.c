@@ -4,7 +4,7 @@
   * Sniffing code gleaned from here, re-written and modified. See decoder.cpp
   * https://github.com/openscopeproject/HP34401a-OLED-FW/
   * Original = Arduino C++
-  * My project = STM32 HAL embedded C
+  * This project = STM32 HAL embedded C
   ******************************************************************************
 */
 
@@ -31,8 +31,6 @@ volatile uint32_t dmm_new_data_counter;
 volatile uint16_t dmm_blink_mask;
 static void decodeControlFrame(void);
 
-
-
 volatile uint32_t dbg_main_gap_us;
 volatile uint32_t dbg_main_gap_us_max;
 volatile uint32_t dbg_last_main_us;
@@ -43,9 +41,6 @@ volatile uint32_t dbg_last_any_us;
 
 volatile uint32_t dbg_fifo_level_max;
 volatile uint32_t dbg_fifo_level;
-
-
-
 
 // ===== Internal sniff state =====
 static volatile uint8_t  byte_len;
@@ -432,7 +427,7 @@ void Decoder34401_Process(void)
 
                 need_reset = true;
 
-                updateBarGraphFromMessageFrame();
+                //updateBarGraphFromMessageFrame();         // not using tha bargraph
                 endFrame();
             }
             else {
