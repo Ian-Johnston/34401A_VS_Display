@@ -176,12 +176,11 @@ int main(void) {
                 if (display_phase == 0)
                 {
                     DisplayMain();
-                    //HAL_GPIO_TogglePin(GPIOC, TEST_OUT_Pin);      // used for TFT refresh rate measuring
                     display_phase = 1;
                 }
                 else
                 {
-                    HAL_Delay(10); // delay         required to stop phantom flashing off upper annunciators and SHIFT issue problems
+                    //HAL_Delay(10); // delay         may be required to stop phantom flashing off upper annunciators and SHIFT issue problems, but may cause acquisition pausing
                     DisplayAnnunciators();
                     display_phase = 0;
                     pending = 0;

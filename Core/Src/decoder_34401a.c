@@ -18,7 +18,7 @@
 #define MAX_SCK_DELAY_US 1500u  // 1.5ms
 
 // FIFO size must be power of 2 for simple wrap
-#define BYTE_FIFO_SIZE 64u
+#define BYTE_FIFO_SIZE 256u
 #define BYTE_FIFO_MASK (BYTE_FIFO_SIZE - 1u)
 
 // ===== Extracted data =====
@@ -30,6 +30,22 @@ volatile uint32_t dmm_new_data_counter;
 
 volatile uint16_t dmm_blink_mask;
 static void decodeControlFrame(void);
+
+
+
+volatile uint32_t dbg_main_gap_us;
+volatile uint32_t dbg_main_gap_us_max;
+volatile uint32_t dbg_last_main_us;
+
+volatile uint32_t dbg_any_gap_us;
+volatile uint32_t dbg_any_gap_us_max;
+volatile uint32_t dbg_last_any_us;
+
+volatile uint32_t dbg_fifo_level_max;
+volatile uint32_t dbg_fifo_level;
+
+
+
 
 // ===== Internal sniff state =====
 static volatile uint8_t  byte_len;
@@ -237,6 +253,19 @@ static void messageByte(uint8_t byte)
 // -----------------------------------------------------------------------------
 void Decoder34401_Init(void)
 {
+    dbg_fifo_level = 0;
+    dbg_fifo_level_max = 0;
+
+    dbg_main_gap_us = 0;
+    dbg_main_gap_us_max = 0;
+    dbg_last_main_us = micros32();
+
+    dbg_any_gap_us = 0;
+    dbg_any_gap_us_max = 0;
+    dbg_last_any_us = micros32();
+
+
+
     DWT_Init();
 
     dmm_blink_mask = 0;
@@ -276,6 +305,10 @@ void Decoder34401_Init(void)
     dmm_bar_counter = 0;
 
     last_us = micros32();
+
+    dbg_any_gap_us_max = 0;
+    dbg_main_gap_us_max = 0;
+    dbg_byte_overrun_count = 0;
 }
 
 void Decoder34401_SckEdge(void)
@@ -306,6 +339,12 @@ void Decoder34401_SckEdge(void)
             byte_fifo[fifo_wr].in = input_acc;
             byte_fifo[fifo_wr].out = output_acc;
             fifo_wr = next_wr;
+
+            dbg_fifo_level = (uint32_t)((fifo_wr - fifo_rd) & BYTE_FIFO_MASK);
+
+            if (dbg_fifo_level > dbg_fifo_level_max) {
+                dbg_fifo_level_max = dbg_fifo_level;
+            }
         }
 
         byte_len = 0u;
@@ -323,6 +362,18 @@ void Decoder34401_Process(void)
         input_byte = byte_fifo[fifo_rd].in;
         output_byte = byte_fifo[fifo_rd].out;
         fifo_rd = (uint8_t)((fifo_rd + 1u) & BYTE_FIFO_MASK);
+
+        // Any-byte timing debug
+        {
+            uint32_t now_us = micros32();
+
+            dbg_any_gap_us = now_us - dbg_last_any_us;
+            if (dbg_any_gap_us > dbg_any_gap_us_max) {
+                dbg_any_gap_us_max = dbg_any_gap_us;
+            }
+
+            dbg_last_any_us = now_us;
+        }
 
         // consume byte
         input_buf[buf_len] = input_byte;
@@ -366,6 +417,19 @@ void Decoder34401_Process(void)
                 dmm_blink_mask = msg_blink_work;
                 dmm_new_data_counter++;
                 dmm_main_counter++;
+
+                // Main-message timing debug
+                {
+                    uint32_t now_us = micros32();
+
+                    dbg_main_gap_us = now_us - dbg_last_main_us;
+                    if (dbg_main_gap_us > dbg_main_gap_us_max) {
+                        dbg_main_gap_us_max = dbg_main_gap_us;
+                    }
+
+                    dbg_last_main_us = now_us;
+                }
+
                 need_reset = true;
 
                 updateBarGraphFromMessageFrame();
