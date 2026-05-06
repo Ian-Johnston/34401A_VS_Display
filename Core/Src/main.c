@@ -169,7 +169,7 @@ int main(void) {
             uint32_t now = HAL_GetTick();
 
             // Display timing (fast)
-            if ((now - last_display_ms) >= 20)      // 10 sets 50Hz for each, 12 = 41.7Hz, 14 = 35.7Hz, 15 = 33.3Hz, 16 = 31.25Hz, 20 = 25Hz.......if set too fast we get display corruption (i.e. Freq mode on 34401A)
+            if ((now - last_display_ms) >= 16)      // 10 sets 50Hz for each, 12 = 41.7Hz, 14 = 35.7Hz, 15 = 33.3Hz, 16 = 31.25Hz, 20 = 25Hz.......if set too fast we get display corruption (i.e. Freq mode on 34401A or SHIFT button issue)
             {
                 last_display_ms = now;
 
