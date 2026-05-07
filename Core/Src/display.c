@@ -506,16 +506,24 @@ void DisplayAnnunciators(void)
 		860   // 4Wire
 	};
 
+	// Digital input B0 high/open = SHIFT enabled, B0 low = hide SHIFT annunciator
+	uint8_t showShift = (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_SET);
+
 	for (int i = 0; i < 15; i++)
 	{
-		//if (1)
-		if (dmm_ann_state & (uint16_t)(1U << i))
+		uint8_t annOn = ((dmm_ann_state & (uint16_t)(1U << i)) != 0);
+
+		// Suppress SHIFT annunciator if B0 tied low
+		if (i == 11 && !showShift)
+			annOn = 0;
+
+		if (annOn)
 		{
-		//	if (i == 9)											// ERROR				bug here, red artefacts ppear to left of "CONT"
-		//		SetTextColors(AnnunColourForeRed, 0x000000);
-		//	else if (i >= 12)									// DIODE, CONT, 4Wire
-		//		SetTextColors(AnnunColourForeYel, 0x000000);
-		//	else
+			//	if (i == 9)											// ERROR				bug here, red artefacts appear to left of "CONT"
+			//		SetTextColors(AnnunColourForeRed, 0x000000);
+			//	else if (i >= 12)									// DIODE, CONT, 4Wire
+			//		SetTextColors(AnnunColourForeYel, 0x000000);
+			//	else
 			SetTextColors(AnnunColourFore, 0x000000);
 		}
 		else
@@ -549,4 +557,3 @@ void DisplayAnnunciators(void)
 		DrawText(AnnuncNames[i]);
 	}
 }
-
