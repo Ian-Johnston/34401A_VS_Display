@@ -147,14 +147,14 @@ void DisplayMain(void)
 	{
 		int dp_x2 = 70;
 		int dp_y2 = Ypos_MAIN + (dp_pos * MAIN_CHAR_ADVANCE) + 2;
-		
+
 		DrawLine(dp_x2, dp_y2 + 0, dp_x2 + 100, dp_y2 + 0, 0x00, 0x00, 0x00);
 		DrawLine(dp_x2, dp_y2 + 1, dp_x2 + 100, dp_y2 + 1, 0x00, 0x00, 0x00);
 		DrawLine(dp_x2, dp_y2 + 2, dp_x2 + 100, dp_y2 + 2, 0x00, 0x00, 0x00);
 		DrawLine(dp_x2, dp_y2 + 3, dp_x2 + 100, dp_y2 + 3, 0x00, 0x00, 0x00);
 		DrawLine(dp_x2, dp_y2 + 4, dp_x2 + 100, dp_y2 + 4, 0x00, 0x00, 0x00);
 		DrawLine(dp_x2, dp_y2 + 5, dp_x2 + 100, dp_y2 + 5, 0x00, 0x00, 0x00);
-		
+
 		DrawLine(dp_x2, dp_y2 + 6, dp_x2 + 100, dp_y2 + 6, 0x00, 0x00, 0x00);
 		DrawLine(dp_x2, dp_y2 + 7, dp_x2 + 100, dp_y2 + 7, 0x00, 0x00, 0x00);
 		last_dp_pos = dp_pos;
@@ -177,7 +177,7 @@ void DisplayMain(void)
 		DrawLine(comma_x2, comma_y2 + 7, comma_x2 + 100, comma_y2 + 7, 0x00, 0x00, 0x00);
 		DrawLine(comma_x2, comma_y2 + 8, comma_x2 + 100, comma_y2 + 8, 0x00, 0x00, 0x00);
 		DrawLine(comma_x2, comma_y2 + 9, comma_x2 + 100, comma_y2 + 9, 0x00, 0x00, 0x00);
-		
+
 		DrawLine(comma_x2, comma_y2 + 10, comma_x2 + 100, comma_y2 + 10, 0x00, 0x00, 0x00);
 		DrawLine(comma_x2, comma_y2 + 11, comma_x2 + 100, comma_y2 + 11, 0x00, 0x00, 0x00);
 		last_comma_pos = comma_pos;
