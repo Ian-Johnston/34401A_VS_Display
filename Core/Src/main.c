@@ -181,7 +181,7 @@ int main(void) {
     while (1)
     {
 
-        // BluePill clone determination/test - Variable dbg_loop_per_sec should be around 289000 to 291000, a clone is down below 230000
+        // BluePill clone determination/test - Loops per sec is displayed on the TFT for 2secs at boot. Examples: Good board = 43596, Bad board = 849
         if (!dbg_loop_test_done)
         {
             dbg_loop_count++;
