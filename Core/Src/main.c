@@ -68,6 +68,18 @@ uint8_t inaState = 0;
 
 extern volatile uint8_t logReady;
 
+// BluePill clone determination/tests
+volatile uint32_t dbg_sysclk_hz = 0;
+volatile uint32_t dbg_hclk_hz = 0;
+volatile uint32_t dbg_pclk1_hz = 0;
+volatile uint32_t dbg_pclk2_hz = 0;
+volatile uint32_t dbg_clock_source = 0;
+volatile uint32_t dbg_hse_ready = 0;
+volatile uint32_t dbg_pll_ready = 0;
+volatile uint32_t dbg_loop_count = 0;
+volatile uint32_t dbg_loop_per_sec = 0;
+volatile uint32_t dbg_loop_last_ms = 0;
+
 //******************************************************************************
 // HP Symbols
 
@@ -122,6 +134,15 @@ int main(void) {
     // Configure the system clock
     SystemClock_Config();
 
+    // BluePill clone determination
+    dbg_sysclk_hz = HAL_RCC_GetSysClockFreq();
+    dbg_hclk_hz = HAL_RCC_GetHCLKFreq();
+    dbg_pclk1_hz = HAL_RCC_GetPCLK1Freq();
+    dbg_pclk2_hz = HAL_RCC_GetPCLK2Freq();
+    dbg_clock_source = __HAL_RCC_GET_SYSCLK_SOURCE();
+    dbg_hse_ready = __HAL_RCC_GET_FLAG(RCC_FLAG_HSERDY);
+    dbg_pll_ready = __HAL_RCC_GET_FLAG(RCC_FLAG_PLLRDY);
+
     // Initialize all configured peripherals
     MX_GPIO_Init();
 
@@ -158,6 +179,17 @@ int main(void) {
 
     while (1)
     {
+
+        // BluePill clone determination/test - In Live Watch variable dbg_loop_per_sec should be around 289000 to 291000, a clone is down below 230000
+        //dbg_loop_count++;
+        //uint32_t loop_now = HAL_GetTick();
+        //if ((loop_now - dbg_loop_last_ms) >= 1000)
+        //{
+        //    dbg_loop_per_sec = dbg_loop_count;
+        //    dbg_loop_count = 0;
+        //    dbg_loop_last_ms = loop_now;
+        //}
+
         Decoder34401_Process();
 
         // Phased writes between the DisplayMain and the Annunciators. 100Hz overall thus 50Hz refresh rate for each.

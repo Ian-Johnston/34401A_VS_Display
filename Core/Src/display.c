@@ -507,8 +507,7 @@ void DisplayAnnunciators(void)
 	};
 
 	// Digital input B0 high/open = SHIFT enabled, B0 low = hide SHIFT annunciator
-	//uint8_t showShift = (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_SET);
-	uint8_t showShift = 0;
+	uint8_t showShift = (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_SET);
 
 	for (int i = 0; i < 15; i++)
 	{
