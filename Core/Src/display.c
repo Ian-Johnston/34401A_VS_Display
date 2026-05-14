@@ -21,6 +21,7 @@
 #define TIMER_INTERVAL_MS 35 // The interval of your timed sub in milliseconds
 
 volatile char tft_main_debug[16];
+extern volatile uint32_t dbg_loop_per_sec;
 
 // Display colours default
 uint32_t MainColourFore = 0xFFFFFF;			// White FFFFFF
@@ -45,6 +46,33 @@ void WaitForTextReady(void)
 		WriteRegister(0xBA);
 		Registerdata = ReadData();
 	}
+}
+
+
+// Write Cpu speed rating to the TFT. 43988 is a good BluePill, 
+void DisplayCloneDetermination(void)
+{
+	SetTextColors(MainColourFore, BackgroundColour);
+	ConfigureFontAndPosition(
+		0b00,    // Internal CGROM
+		0b10,    // Font size
+		0b00,    // ISO 8859-1
+		0,       // Full alignment enabled
+		0,       // Chroma keying disabled
+		1,       // Rotate 90 degrees counterclockwise
+		0b11,    // Width multiplier
+		0b11,    // Height multiplier
+		1,       // Line spacing
+		4,       // Character spacing
+		Xpos_MAIN,
+		Ypos_MAIN
+	);
+	char loopStr[32];
+
+	strcpy(loopStr, "LS=");
+	sprintf(&loopStr[strlen(loopStr)], "%lu", dbg_loop_per_sec);
+
+	DrawText(loopStr);
 }
 
 
