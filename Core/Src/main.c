@@ -79,6 +79,7 @@ volatile uint32_t dbg_pll_ready = 0;
 volatile uint32_t dbg_loop_count = 0;
 volatile uint32_t dbg_loop_per_sec = 0;
 volatile uint32_t dbg_loop_last_ms = 0;
+volatile uint32_t dbg_loop_test_done = 0;
 
 //******************************************************************************
 // HP Symbols
@@ -169,6 +170,9 @@ int main(void) {
     // For 34401A sniffing: clear any pending EXTI flag for PB13 SCK
     __HAL_GPIO_EXTI_CLEAR_IT(FP_SCK_Pin);
 
+    // BluePill board speed test, use this one if no comms are running - clone or genuine BluePill?
+    //RunBluePillSpeedTestOffline();    // Good board = 1467530, bad board = TBA (will be a LOT less)
+
 
     //**************************************************************************************************
     // Main loop initialize
@@ -181,19 +185,7 @@ int main(void) {
     while (1)
     {
 
-        // BluePill clone determination/test - Loops per sec is displayed on the TFT for 2secs at boot. Examples: Good board = 43596, Bad board = 849
-        if (!dbg_loop_test_done)
-        {
-            dbg_loop_count++;
-            uint32_t loop_now = HAL_GetTick();
-            if ((loop_now - dbg_loop_last_ms) >= 1000)
-            {
-                dbg_loop_per_sec = dbg_loop_count;
-                dbg_loop_test_done = 1;     // stop further testing
-                DisplayCloneDetermination();
-                HAL_Delay(2000);
-            }
-        }
+        RunBluePillSpeedTestOnline();
 
         Decoder34401_Process();
 
@@ -233,6 +225,50 @@ int main(void) {
         }
     }
 
+}
+
+
+void RunBluePillSpeedTestOffline(void)
+{
+    // BluePill clone determination/test - standalone loop speed test when no comms is available
+    // Loops per sec is displayed on the TFT for 2secs at boot.
+    // Examples: Good board = 1467530, bad board = TBA
+
+    dbg_loop_count = 0;
+    dbg_loop_per_sec = 0;
+    dbg_loop_test_done = 0;
+
+    uint32_t test_start_ms = HAL_GetTick();
+
+    while ((HAL_GetTick() - test_start_ms) < 1000)
+    {
+        dbg_loop_count++;
+    }
+
+    dbg_loop_per_sec = dbg_loop_count;
+    dbg_loop_test_done = 1;
+
+    DisplayCloneDetermination();
+
+    HAL_Delay(2000);
+}
+
+
+void RunBluePillSpeedTestOnline(void)
+{
+    // BluePill clone determination/test - Loops per sec is displayed on the TFT for 2secs at boot. Examples: Good board = 43596, Bad board = 849
+    if (!dbg_loop_test_done)
+    {
+        dbg_loop_count++;
+        uint32_t loop_now = HAL_GetTick();
+        if ((loop_now - dbg_loop_last_ms) >= 1000)
+        {
+            dbg_loop_per_sec = dbg_loop_count;
+            dbg_loop_test_done = 1;     // stop further testing
+            DisplayCloneDetermination();
+            HAL_Delay(2000);
+        }
+    }
 }
 
 
