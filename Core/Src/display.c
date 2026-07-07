@@ -30,6 +30,7 @@ uint32_t AnnunColourForeYel = 0xFFFF00;		// Yellow FFFF00
 uint32_t AnnunColourForeRed = 0xFF0000;		// Red FF0000
 uint32_t BackgroundColour = 0x000000;		// Black 000000
 uint32_t SplashIanJColourFore = 0xFFFF00;	// Yellow FFFF00
+uint32_t AuxColourForeLS = 0xA0A0A0;		// Grey
 
 
 //************************************************************************************************************************************************************
@@ -584,4 +585,58 @@ void DisplayAnnunciators(void)
 
 		DrawText(AnnuncNames[i]);
 	}
+}
+
+
+// Write Cpu speed rating to the MAIN TFT.
+void DisplayCloneDeterminationMain(void)
+{
+	SetTextColors(MainColourFore, BackgroundColour);
+	ConfigureFontAndPosition(
+		0b00,    // Internal CGROM
+		0b10,    // Font size
+		0b00,    // ISO 8859-1
+		0,       // Full alignment enabled
+		0,       // Chroma keying disabled
+		1,       // Rotate 90 degrees counterclockwise
+		0b11,    // Width multiplier
+		0b11,    // Height multiplier
+		1,       // Line spacing
+		4,       // Character spacing
+		Xpos_MAIN,
+		Ypos_MAIN
+	);
+	char loopStr[32];
+
+	strcpy(loopStr, "LS=");
+	sprintf(&loopStr[strlen(loopStr)], "%lu", dbg_loop_per_sec);
+
+	DrawText(loopStr);
+}
+
+
+// Write Cpu speed rating to the AUX TFT.
+void DisplayCloneDeterminationAux(void)
+{
+	SetTextColors(AuxColourForeLS, BackgroundColour);
+	ConfigureFontAndPosition(
+		0b00,    // Internal CGROM
+		0b01,    // Font size
+		0b00,    // ISO 8859-1
+		0,       // Full alignment enabled
+		0,       // Chroma keying disabled
+		1,       // Rotate 90 degrees counterclockwise
+		0b01,    // Width multiplier
+		0b01,    // Height multiplier
+		5,       // Line spacing
+		0,       // Character spacing
+		Xpos_MAIN,
+		Ypos_MAIN
+	);
+	char loopStr[32];
+
+	strcpy(loopStr, "BluePill speed = ");
+	sprintf(&loopStr[strlen(loopStr)], "%lu", dbg_loop_per_sec);
+
+	DrawText(loopStr);
 }

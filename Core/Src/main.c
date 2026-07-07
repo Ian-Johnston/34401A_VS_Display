@@ -182,11 +182,11 @@ int main(void) {
     static uint8_t display_phase = 0;
     static uint32_t last_led_ms = 0;
 
+    RunBluePillSpeedTestOffline();	// BluePill speed test = 1464327 approx. is normal
+    ClearScreen();					// Again.....
+
     while (1)
     {
-
-        RunBluePillSpeedTestOnline();
-
         Decoder34401_Process();
 
         // Phased writes between the DisplayMain and the Annunciators. 100Hz overall thus 50Hz refresh rate for each.
@@ -197,6 +197,10 @@ int main(void) {
         {
             uint32_t now = HAL_GetTick();
 
+            DisplayMain();
+            DisplayAnnunciators();
+
+            /*
             // Display timing (fast)
             if ((now - last_display_ms) >= 16)      // 10 sets 50Hz for each, 12 = 41.7Hz, 14 = 35.7Hz, 15 = 33.3Hz, 16 = 31.25Hz, 20 = 25Hz.......if set too fast we get display corruption (i.e. Freq mode on 34401A or SHIFT button issue)
             {
@@ -215,6 +219,7 @@ int main(void) {
                     pending = 0;
                 }
             }
+            */
 
             // LED timing (slow, e.g. 200 ms)
             if ((now - last_led_ms) >= 200)
@@ -232,7 +237,7 @@ void RunBluePillSpeedTestOffline(void)
 {
     // BluePill clone determination/test - standalone loop speed test when no comms is available
     // Loops per sec is displayed on the TFT for 2secs at boot.
-    // Examples: Good board = 1467530, bad board = TBA
+    // Examples: Good board = 1497606, bad board = TBA
 
     dbg_loop_count = 0;
     dbg_loop_per_sec = 0;
@@ -248,7 +253,7 @@ void RunBluePillSpeedTestOffline(void)
     dbg_loop_per_sec = dbg_loop_count;
     dbg_loop_test_done = 1;
 
-    DisplayCloneDetermination();
+    DisplayCloneDeterminationAux();
 
     HAL_Delay(2000);
 }
@@ -265,7 +270,7 @@ void RunBluePillSpeedTestOnline(void)
         {
             dbg_loop_per_sec = dbg_loop_count;
             dbg_loop_test_done = 1;     // stop further testing
-            DisplayCloneDetermination();
+            DisplayCloneDeterminationAux();
             HAL_Delay(2000);
         }
     }
