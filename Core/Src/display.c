@@ -38,15 +38,9 @@ uint32_t AuxColourForeLS = 0xA0A0A0;		// Grey
 
 void WaitForTextReady(void)
 {
-	uint8_t Registerdata;
-
-	WriteRegister(0xBA);                      // SPI Master Status Register
-	Registerdata = ReadData();
-
-	while (Registerdata & (1 << 6)) {         // Tx FIFO Full
-		WriteRegister(0xBA);
-		Registerdata = ReadData();
-	}
+	// Previously polled REG[BAh], which is the LT7680's own SPI Master status (SPI master is disabled),
+	// so it never waited. Use the Status Register instead: write FIFO empty and core idle.
+	WaitForLT7680WriteComplete();
 }
 
 
